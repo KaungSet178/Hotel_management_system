@@ -195,56 +195,56 @@ This living document tracks completed implementations, active backend components
 
 ## 3. What Is Left To Do (Remaining Tasks & Roadmap)
 
-**ALL 5 BACKEND PHASES ARE 100% COMPLETE.**
+**ALL 5 BACKEND ENGINEERING PHASES ARE 100% COMPLETE & VERIFIED.**
 
-The backend system is fully built, hardened, validated, and ready for:
-1. Pushing migrations to the live Supabase cloud project using `npm run deploy:db`.
-2. Frontend teammate integration using the contract in [`API_DOCUMENTATION.md`](file:///c:/Users/ACER/OneDrive/Desktop/hotel_management_system/API_DOCUMENTATION.md).
+* Database migrations executed on live Supabase cloud instance.
+* All 46 automated integration tests passing.
+* Stripe CLI local sandbox webhook verified (`200 OK`).
+* Repository structured into monorepo (`backend/` & `frontend/`) and pushed to GitHub.
+
+For full project requirements remaining (Frontend guest/staff dashboards, real-time SSE listener, and cloud deployment), see the master roadmap:
+👉 [`../PROJECT_ROADMAP_AND_STATUS.md`](../PROJECT_ROADMAP_AND_STATUS.md)
 
 ---
 
 ## 4. Current File Map
 
 ```
-hotel_management_system/
-├── PROJECT_SPECS.md              # Official Master Specifications
-├── PROGRESS_TRACKER.md           # This document (100% Complete Project Tracker)
-├── API_DOCUMENTATION.md          # Frontend Integration Guide & Contract
-├── BACKEND_SETUP.md              # Production Cloud Deployment Guide
-├── package.json                  # Dependencies & Deployment Scripts (deploy:db, deploy:functions)
-├── .env                          # Local environment variables
-├── .env.production.example       # Production template with all required keys
-├── server/
-│   ├── index.js                  # Express API Gateway, SSE stream, Helmet & CORS Hardened
-│   ├── supabaseClient.js         # Supabase data layer + atomic locking store + markBookingAsPaid
-│   ├── qrService.js              # Cryptographic QR token & image generator
-│   ├── cancellationJob.js        # 24-Hour cancellation policy background worker
-│   ├── test-suite.js             # Automated test suite (46/46 passing)
-│   ├── middleware/
-│   │   ├── auth.js               # Supabase JWT token verification
-│   │   ├── roles.js              # RBAC role guard factory (requireRole)
-│   │   ├── validate.js           # Zod schema request validation middleware factory
-│   │   ├── rateLimiter.js        # Tiered rate limiters (Global 100/15m, Strict 10/1m)
-│   │   └── errorHandler.js       # Centralized global error handler
-│   ├── validators/
-│   │   └── schemas.js            # Core Zod validation schemas
-│   └── services/
-│       ├── kbzPayService.js      # KBZPay signature generation & webhook verification
-│       └── stripeService.js      # Stripe Checkout session & raw buffer HMAC verification
-└── supabase/
-    ├── migrations/
-    │   ├── 20261010_001_initial_schema.sql
-    │   ├── 20261010_002_concurrency_and_cancellation.sql
-    │   ├── 20261010_003_seed_data.sql
-    │   └── 20261011_004_schedule_cancellations.sql   # Native pg_cron hourly job
-    └── functions/
-        └── cancellation-job/index.ts                 # Supabase Edge Function
+Hotel_management_system/
+├── backend/
+│   ├── server/                   # Express API Gateway, SSE stream, Helmet & CORS Hardened
+│   │   ├── index.js              # Server entry point
+│   │   ├── supabaseClient.js     # Supabase data layer + atomic locking store + markBookingAsPaid
+│   │   ├── qrService.js          # Cryptographic QR token & image generator
+│   │   ├── cancellationJob.js    # 24-Hour cancellation policy background worker
+│   │   ├── checkSupabase.js      # Live database diagnostic tool
+│   │   ├── test-suite.js         # Automated test suite (46/46 passing)
+│   │   ├── middleware/           # auth.js, roles.js, validate.js, rateLimiter.js, errorHandler.js
+│   │   ├── validators/           # schemas.js (Zod validation schemas)
+│   │   └── services/             # kbzPayService.js, stripeService.js
+│   ├── supabase/
+│   │   ├── COMPLETE_DATABASE_SETUP.sql # Consolidated 1-click cloud migration
+│   │   ├── migrations/           # 001_initial_schema, 002_concurrency, 003_seed, 004_schedule
+│   │   └── functions/            # cancellation-job/index.ts (Deno Edge Function)
+│   ├── public/                   # Static mock assets & concierge portal
+│   ├── .env                      # Local environment secrets (Git-ignored)
+│   ├── .env.example              # Public environment template
+│   ├── .env.production.example   # Production cloud deployment template
+│   ├── API_DOCUMENTATION.md      # Frontend integration specs
+│   ├── BACKEND_SETUP.md          # Cloud setup instructions
+│   └── PROGRESS_TRACKER.md       # This document
+├── frontend/
+│   └── README.md                 # Frontend developer onboarding guide
+├── .gitignore                    # Monorepo ignore configuration
+├── package.json                  # Root runner (npm start, npm test, npm run check:db)
+├── PROJECT_ROADMAP_AND_STATUS.md # Master project status and future roadmap
+└── README.md                     # High-level overview
 ```
 
 ---
 
 ## 5. Next Immediate Action
 
-The backend is **100% complete**. 
-Run `npm run deploy:db` to apply all migrations and activate native `pg_cron` scheduling on your live Supabase database!
+The backend is **100% complete and deployed on GitHub**.
+Your frontend teammate can now clone the repository, run `npm start` to run the backend API at `http://localhost:3000`, and start building the frontend in `frontend/`.
 
