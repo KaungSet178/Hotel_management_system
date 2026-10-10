@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grand Azure Luxury Resort & Hotel Management System</title>
+  <meta name="description" content="End-to-End Hotel Management System with Supabase Realtime, Contactless QR Check-In, In-Room Service Concierge, and Live Staff Operations.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- TOP LUXURY HEADER -->
+  <header class="top-header" id="main-header">
+    <div class="header-inner">
+      <div class="brand-group">
+        <div class="brand-crest">⚜</div>
+        <div class="brand-text">
+          <span class="hotel-title">GRAND AZURE</span>
+          <span class="hotel-subtitle">RESORT & RESIDENCES • 5-STAR LUXURY</span>
+        </div>
+      </div>
+
+      <!-- Realtime Engine Status Pill -->
+      <div class="realtime-pill" id="realtime-status-pill">
+        <span class="pulse-dot"></span>
+        <span class="pill-text" id="engine-status-text">Supabase Realtime Live</span>
+      </div>
+
+      <!-- Role / View Switcher -->
+      <nav class="role-nav" aria-label="Portal Navigation" id="role-nav-bar">
+        <button class="nav-tab active" data-view="guest-booking" id="nav-guest-booking">
+          <span class="tab-icon">✨</span>
+          <span class="tab-label">Guest Booking</span>
+        </button>
+        <button class="nav-tab" data-view="kiosk-checkin" id="nav-kiosk-checkin">
+          <span class="tab-icon">📱</span>
+          <span class="tab-label">Contactless QR Check-In</span>
+        </button>
+        <button class="nav-tab" data-view="in-room-portal" id="nav-in-room-portal">
+          <span class="tab-icon">🛎️</span>
+          <span class="tab-label">In-Room Guest Portal</span>
+        </button>
+        <button class="nav-tab" data-view="staff-dashboard" id="nav-staff-dashboard">
+          <span class="tab-icon">⚡</span>
+          <span class="tab-label">Staff Realtime Board</span>
+          <span class="badge-counter" id="active-requests-badge">0</span>
+        </button>
+        <button class="nav-tab" data-view="admin-policy" id="nav-admin-policy">
+          <span class="tab-icon">🛡️</span>
+          <span class="tab-label">24h Policy & Admin</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- LIVE NOTIFICATION TOAST CONTAINER -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- MAIN APPLICATION CONTENT -->
+  <main class="main-container" id="main-content">
+
+    <!-- ==================================================================== -->
+    <!-- VIEW 1: GUEST BOOKING & ROOM SELECTION                               -->
+    <!-- ==================================================================== -->
+    <section class="view-panel active" id="view-guest-booking">
+      <div class="hero-banner">
+        <div class="hero-content">
+          <span class="hero-eyebrow">WORLD-CLASS HOSPITALITY & SMART AUTOMATION</span>
+          <h1 class="hero-heading">Experience Effortless Coastal Luxury</h1>
+          <p class="hero-subtext">
+            Immerse yourself in oceanfront tranquility. Reserve with instant contactless QR check-in, 
+            flexible payment options, and 24/7 dedicated in-room digital concierge.
+          </p>
+        </div>
+
+        <!-- Booking Date / Filter Bar -->
+        <div class="booking-search-bar" id="search-filter-card">
+          <div class="search-col">
+            <label for="filter-check-in">Check-in Date</label>
+            <input type="date" id="filter-check-in" class="luxury-input">
+          </div>
+          <div class="search-col">
+            <label for="filter-check-out">Check-out Date</label>
+            <input type="date" id="filter-check-out" class="luxury-input">
+          </div>
+          <div class="search-col">
+            <label for="filter-guests">Guests</label>
+            <select id="filter-guests" class="luxury-select">
+              <option value="1">1 Adult</option>
+              <option value="2" selected>2 Adults</option>
+              <option value="3">3 Adults</option>
+              <option value="4">4 Adults / Family</option>
+            </select>
+          </div>
+          <div class="search-col">
+            <label for="filter-type">Suite Category</label>
+            <select id="filter-type" class="luxury-select">
+              <option value="ALL">All Luxury Suites</option>
+              <option value="Ocean">Ocean View</option>
+              <option value="Suite">Garden & Horizon Suites</option>
+              <option value="Penthouse">Penthouse</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Room Catalogue Section -->
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Available Sanctuary Suites</h2>
+          <p class="section-desc">Atomic database transactions safeguard every reservation against double-bookings.</p>
+        </div>
+        <div class="catalogue-actions">
+          <span class="live-counter-tag" id="available-rooms-count">Loading suites...</span>
+        </div>
+      </div>
+
+      <!-- Rooms Grid -->
+      <div class="rooms-grid" id="rooms-grid-container">
+        <!-- Dynamically injected via app.js -->
+      </div>
+    </section>
+
+    <!-- ==================================================================== -->
+    <!-- VIEW 2: CONTACTLESS QR CHECK-IN TERMINAL                              -->
+    <!-- ==================================================================== -->
+    <section class="view-panel" id="view-kiosk-checkin">
+      <div class="kiosk-container">
+        <div class="kiosk-header">
+          <div class="kiosk-badge">SELF-SERVICE RECEPTION TERMINAL</div>
+          <h2 class="kiosk-title">Contactless Fast-Track Arrival</h2>
+          <p class="kiosk-desc">
+            Bypass front desk queues. Scan your booking QR pass or enter your token below to instantly receive your digital key.
+          </p>
+        </div>
+
+        <div class="kiosk-card">
+          <div class="scanner-frame">
+            <div class="scanner-laser"></div>
+            <div class="scanner-placeholder">
+              <div class="scanner-icon">📷</div>
+              <p class="scanner-label">Hold your Mobile QR Pass to the scanner</p>
+              <span class="scanner-subtext">High-security HMAC verified</span>
+            </div>
+          </div>
+
+          <div class="kiosk-input-section">
+            <label for="manual-qr-input">Or paste / select your QR Token:</label>
+            <div class="token-input-row">
+              <input type="text" id="manual-qr-input" class="luxury-input" placeholder="e.g. LUX-QR-LUX-8491-..." />
+              <button class="btn btn-gold" id="btn-submit-checkin">Verify & Check-In</button>
+            </div>
+            
+            <!-- Quick Demo Selectors -->
+            <div class="quick-tokens" id="quick-tokens-bar">
+              <span class="quick-label">Quick Test Tokens:</span>
+              <div id="quick-token-buttons" class="token-pills"></div>
+            </div>
+          </div>
+
+          <!-- Check-in Success Result Box -->
+          <div class="checkin-result hidden" id="checkin-result-box">
+            <div class="result-check">✓</div>
+            <h3 class="result-title" id="checkin-guest-name">Check-In Successful!</h3>
+            <p class="result-welcome" id="checkin-room-assigned">Assigned to Suite 101 • Key Activated</p>
+            
+            <div class="digital-key-pass">
+              <div class="pass-header">
+                <span>DIGITAL ROOM KEY</span>
+                <span class="pass-active-dot">ACTIVE</span>
+              </div>
+              <div class="pass-body">
+                <div class="pass-field">
+                  <span class="label">SUITE</span>
+                  <span class="val" id="key-room-number">101</span>
+                </div>
+                <div class="pass-field">
+                  <span class="label">REF</span>
+                  <span class="val" id="key-booking-ref">LUX-8491</span>
+                </div>
+                <div class="pass-field">
+                  <span class="label">CHECK-IN TIME</span>
+                  <span class="val" id="key-checkin-time">Just now</span>
+                </div>
+              </div>
+              <div class="pass-footer">
+                <button class="btn btn-primary" id="btn-open-room-concierge">Launch In-Room Concierge</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================================================================== -->
+    <!-- VIEW 3: IN-ROOM SERVICE REQUEST PORTAL                               -->
+    <!-- ==================================================================== -->
+    <section class="view-panel" id="view-in-room-portal">
+      <div class="inroom-wrapper">
+        <div class="inroom-header">
+          <div class="suite-display-card">
+            <div class="suite-num-badge" id="concierge-room-badge">SUITE 101</div>
+            <div>
+              <h2 class="concierge-title">In-Room Digital Concierge</h2>
+              <p class="concierge-desc">Requests are streamed in real time to our 24/7 staff service dashboard.</p>
+            </div>
+          </div>
+          <div class="room-selector-group">
+            <label for="select-active-room">Room Number:</label>
+            <select id="select-active-room" class="luxury-select">
+              <option value="101">Suite 101 (Deluxe Ocean)</option>
+              <option value="102">Suite 102 (Garden Suite)</option>
+              <option value="201">Suite 201 (Presidential Penthouse)</option>
+              <option value="202" selected>Suite 202 (Azure Sunset Villa)</option>
+              <option value="301">Suite 301 (Skyline Grand King)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="inroom-grid">
+          <!-- Request Form & Quick Categories -->
+          <div class="inroom-panel-card">
+            <h3 class="panel-subtitle">New In-Room Request</h3>
+            
+            <div class="category-selector">
+              <label>Select Category:</label>
+              <div class="category-buttons" id="service-category-buttons">
+                <button class="cat-btn active" data-cat="TOWELS">
+                  <span class="cat-icon">🧺</span>
+                  <span>Extra Towels & Robes</span>
+                </button>
+                <button class="cat-btn" data-cat="CLEANING">
+                  <span class="cat-icon">🧹</span>
+                  <span>Room Cleaning</span>
+                </button>
+                <button class="cat-btn" data-cat="FOOD_BEVERAGE">
+                  <span class="cat-icon">🍾</span>
+                  <span>Dining & Wine</span>
+                </button>
+                <button class="cat-btn" data-cat="MAINTENANCE">
+                  <span class="cat-icon">🛠️</span>
+                  <span>Engineering / AC</span>
+                </button>
+                <button class="cat-btn" data-cat="AMENITIES">
+                  <span class="cat-icon">🧴</span>
+                  <span>Toiletries & Pillows</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="service-priority">Priority Level:</label>
+              <select id="service-priority" class="luxury-select">
+                <option value="NORMAL" selected>Normal Service (Within 15 mins)</option>
+                <option value="URGENT">Urgent (Immediate Assistance)</option>
+                <option value="LOW">Low (At Next Turn-down)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="service-details">Special Instructions or Items:</label>
+              <textarea id="service-details" class="luxury-textarea" rows="3" placeholder="Please describe what you need (e.g., 2 extra bath sheets, hypoallergenic pillows, ice bucket)..."></textarea>
+            </div>
+
+            <button class="btn btn-gold btn-block" id="btn-submit-service-req">
+              <span>Send Request to Staff</span>
+              <span class="btn-arrow">→</span>
+            </button>
+          </div>
+
+          <!-- Active Requests Live Timeline -->
+          <div class="inroom-panel-card">
+            <div class="panel-header-inline">
+              <h3 class="panel-subtitle">Active Request Tracker</h3>
+              <span class="live-dot-tag">Live Supabase Feed</span>
+            </div>
+            
+            <div class="requests-timeline" id="room-requests-timeline">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================================================================== -->
+    <!-- VIEW 4: STAFF REALTIME OPERATIONS DASHBOARD                          -->
+    <!-- ==================================================================== -->
+    <section class="view-panel" id="view-staff-dashboard">
+      <!-- Staff Operations Metrics -->
+      <div class="staff-metrics-grid">
+        <div class="metric-card">
+          <div class="metric-label">TOTAL OCCUPANCY</div>
+          <div class="metric-value" id="kpi-occupancy">0%</div>
+          <div class="metric-sub" id="kpi-occupied-rooms">0 of 6 rooms occupied</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">ACTIVE SERVICE REQUESTS</div>
+          <div class="metric-value" id="kpi-service-active">0</div>
+          <div class="metric-sub highlight" id="kpi-urgent-count">0 urgent requests</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">TODAY'S ARRIVALS</div>
+          <div class="metric-value" id="kpi-arrivals">0</div>
+          <div class="metric-sub">Fast-track QR Check-ins</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">UNPAID 24H WATCHLIST</div>
+          <div class="metric-value" id="kpi-unpaid-count">0</div>
+          <div class="metric-sub">Under 24h cancellation rule</div>
+        </div>
+      </div>
+
+      <!-- Staff Sub-tabs -->
+      <div class="staff-nav-tabs">
+        <button class="sub-tab active" data-subtab="staff-requests" id="subtab-btn-requests">
+          🛎️ In-Room Service Feed (<span id="staff-requests-count">0</span>)
+        </button>
+        <button class="sub-tab" data-subtab="staff-rooms" id="subtab-btn-rooms">
+          🏨 Room Inventory & Status Matrix
+        </button>
+        <button class="sub-tab" data-subtab="staff-bookings" id="subtab-btn-bookings">
+          📋 Live Bookings & Check-In Log
+        </button>
+      </div>
+
+      <!-- Tab Content 1: Service Requests Feed -->
+      <div class="staff-tab-content active" id="subtab-staff-requests">
+        <div class="requests-board-header">
+          <div class="filter-pills">
+            <button class="pill-btn active" data-filter-status="ALL">All Requests</button>
+            <button class="pill-btn" data-filter-status="PENDING">Pending</button>
+            <button class="pill-btn" data-filter-status="IN_PROGRESS">In Progress</button>
+            <button class="pill-btn" data-filter-status="COMPLETED">Completed</button>
+          </div>
+          <div class="audio-toggle-wrapper">
+            <label class="toggle-label">
+              <input type="checkbox" id="audio-alert-checkbox" checked>
+              <span>🔔 Audio chime on new requests</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="service-requests-feed" id="staff-requests-feed">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <!-- Tab Content 2: Room Status Matrix -->
+      <div class="staff-tab-content" id="subtab-staff-rooms">
+        <div class="rooms-matrix-grid" id="staff-rooms-matrix">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <!-- Tab Content 3: Live Bookings -->
+      <div class="staff-tab-content" id="subtab-staff-bookings">
+        <div class="table-responsive">
+          <table class="luxury-table" id="staff-bookings-table">
+            <thead>
+              <tr>
+                <th>Reference</th>
+                <th>Guest</th>
+                <th>Suite</th>
+                <th>Dates</th>
+                <th>Payment</th>
+                <th>Status</th>
+                <th>QR Pass</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="staff-bookings-tbody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================================================================== -->
+    <!-- VIEW 5: 24-HOUR CANCELLATION POLICY & ADMIN AUTOMATION                -->
+    <!-- ==================================================================== -->
+    <section class="view-panel" id="view-admin-policy">
+      <div class="admin-wrapper">
+        <div class="admin-card highlight-card">
+          <div class="admin-card-header">
+            <div>
+              <span class="eyebrow-gold">AUTOMATED BACKGROUND CRON ENGINE</span>
+              <h2 class="admin-title">24-Hour Cancellation Policy Enforcement</h2>
+            </div>
+            <div class="cron-status-badge">
+              <span class="pulse-dot-green"></span>
+              <span>Worker Running (30s Polling)</span>
+            </div>
+          </div>
+
+          <p class="policy-explanation">
+            To prevent unpaid reservations from locking room inventory, guests choosing <strong>"Pay at Hotel"</strong> 
+            have a strict 24-hour window from booking creation to confirm or pay. The automated background worker 
+            (implemented via <code>pg_cron</code> or Express worker) checks all bookings and automatically releases expired holds.
+          </p>
+
+          <div class="cancellation-controls">
+            <button class="btn btn-gold" id="btn-trigger-cancellation-job">
+              ⚡ Run Cancellation Check Now
+            </button>
+            <button class="btn btn-outline" id="btn-simulate-expired">
+              🧪 Simulate & Expire Pay-at-Hotel Booking (Demo)
+            </button>
+          </div>
+
+          <div class="job-status-box" id="job-status-feedback">
+            <span class="job-status-icon">ℹ</span>
+            <span id="job-status-text">Click "Run Cancellation Check Now" or "Simulate" to test automated policy execution.</span>
+          </div>
+        </div>
+
+        <!-- Supabase Architecture & Schema Reference Card -->
+        <div class="admin-card">
+          <h3 class="panel-subtitle">Supabase & Database Architecture Summary</h3>
+          <div class="arch-pills-row">
+            <div class="arch-pill">
+              <strong>PostgreSQL Row-Level Locking</strong>
+              <span>Atomic <code>book_room_atomic()</code> avoids double-bookings</span>
+            </div>
+            <div class="arch-pill">
+              <strong>Supabase Realtime</strong>
+              <span>WebSockets on <code>bookings</code>, <code>rooms</code> & <code>requests</code></span>
+            </div>
+            <div class="arch-pill">
+              <strong>Role-Based Access (RLS)</strong>
+              <span>GUEST, RECEPTIONIST, HOUSEKEEPING, ADMIN</span>
+            </div>
+            <div class="arch-pill">
+              <strong>Background Jobs</strong>
+              <span><code>auto_cancel_unpaid_bookings()</code> via pg_cron</span>
+            </div>
+          </div>
+
+          <div class="sql-files-list">
+            <h4>Applied SQL Migrations:</h4>
+            <ul>
+              <li><code>supabase/migrations/20261010_001_initial_schema.sql</code> (Tables, RLS & Realtime)</li>
+              <li><code>supabase/migrations/20261010_002_concurrency_and_cancellation.sql</code> (Atomic row locking & QR check-in functions)</li>
+              <li><code>supabase/migrations/20261010_003_seed_data.sql</code> (Luxury suite inventory)</li>
+              <li><code>supabase/functions/cancellation-job/index.ts</code> (Supabase Edge Function)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================================================================== -->
+  <!-- MODALS                                                               -->
+  <!-- ==================================================================== -->
+
+  <!-- BOOKING MODAL -->
+  <div class="modal-overlay hidden" id="booking-modal">
+    <div class="modal-card">
+      <button class="modal-close-btn" id="modal-close-btn">&times;</button>
+      <div class="modal-header">
+        <span class="modal-eyebrow">RESERVATION INITIATION</span>
+        <h2 class="modal-title" id="modal-room-name">Deluxe Ocean View</h2>
+        <p class="modal-rate" id="modal-room-rate">$280 / night</p>
+      </div>
+
+      <form id="booking-form">
+        <input type="hidden" id="book-room-id">
+        <input type="hidden" id="book-price-per-night">
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="book-guest-name">Full Name *</label>
+            <input type="text" id="book-guest-name" class="luxury-input" placeholder="e.g. Lord Alexander Wright" required>
+          </div>
+          <div class="form-group">
+            <label for="book-guest-email">Email Address *</label>
+            <input type="email" id="book-guest-email" class="luxury-input" placeholder="e.g. alexander@luxury.com" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="book-guest-phone">Mobile Phone</label>
+            <input type="tel" id="book-guest-phone" class="luxury-input" placeholder="+1 (555) 019-2831">
+          </div>
+          <div class="form-group">
+            <label for="book-nights-count">Estimated Nights</label>
+            <input type="number" id="book-nights-count" class="luxury-input" min="1" value="2" readonly>
+          </div>
+        </div>
+
+        <!-- Payment Method Selection -->
+        <div class="payment-selection-section">
+          <label class="section-sublabel">Select Payment Method:</label>
+          <div class="payment-options-grid">
+            <label class="payment-card-opt">
+              <input type="radio" name="payment-method-radio" value="ONLINE" checked>
+              <div class="opt-content">
+                <span class="opt-title">💳 Pay Online (Instant Guarantee)</span>
+                <span class="opt-desc">Secure credit card or Apple Pay. Instant confirmation.</span>
+              </div>
+            </label>
+
+            <label class="payment-card-opt">
+              <input type="radio" name="payment-method-radio" value="PAY_AT_HOTEL">
+              <div class="opt-content">
+                <span class="opt-title">🏨 Pay at Hotel</span>
+                <span class="opt-desc">Pay upon arrival. <strong>Subject to 24h auto-cancellation policy.</strong></span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Price Summary Breakdown -->
+        <div class="price-breakdown-card">
+          <div class="price-row">
+            <span>Room Subtotal (<span id="summary-nights">2</span> nights):</span>
+            <span id="summary-subtotal">$560.00</span>
+          </div>
+          <div class="price-row">
+            <span>Resort Service & Ocean Heritage Fee:</span>
+            <span>$45.00</span>
+          </div>
+          <div class="price-row total-row">
+            <span>Total Payable:</span>
+            <span id="summary-total">$605.00</span>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" id="btn-cancel-modal">Cancel</button>
+          <button type="submit" class="btn btn-gold" id="btn-confirm-reservation">
+            Confirm & Generate QR Pass
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- BOOKING SUCCESS & QR PASS MODAL -->
+  <div class="modal-overlay hidden" id="qr-pass-modal">
+    <div class="modal-card modal-card-qr">
+      <button class="modal-close-btn" id="qr-modal-close-btn">&times;</button>
+      <div class="pass-lux-header">
+        <div class="brand-crest small">⚜</div>
+        <h3>GRAND AZURE LUXURY PASS</h3>
+        <p>Contactless Fast-Track Verification</p>
+      </div>
+
+      <div class="qr-image-wrapper">
+        <img id="qr-pass-image" src="" alt="Contactless Check-In QR Code" />
+        <div class="qr-token-text" id="qr-token-display">LUX-QR-...</div>
+      </div>
+
+      <div class="pass-details-grid">
+        <div>
+          <span class="p-label">BOOKING REF</span>
+          <span class="p-val" id="pass-ref">LUX-8491</span>
+        </div>
+        <div>
+          <span class="p-label">SUITE</span>
+          <span class="p-val" id="pass-room">Suite 101</span>
+        </div>
+        <div>
+          <span class="p-label">PAYMENT</span>
+          <span class="p-val" id="pass-payment">PAID</span>
+        </div>
+        <div>
+          <span class="p-label">STATUS</span>
+          <span class="p-val" id="pass-status">CONFIRMED</span>
+        </div>
+      </div>
+
+      <div class="pass-notice" id="pass-cancellation-notice">
+        <!-- Injected if Pay at Hotel -->
+      </div>
+
+      <div class="pass-actions">
+        <button class="btn btn-gold btn-block" id="btn-use-at-kiosk">
+          Scan at Contactless Kiosk Now →
+        </button>
+        <button class="btn btn-outline btn-block" id="btn-close-qr-modal">
+          Done
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- APPLICATION JAVASCRIPT -->
+  <script src="app.js"></script>
+</body>
+</html>

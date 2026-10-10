@@ -1,0 +1,20 @@
+{
+  "name": "hotel-management-system",
+  "version": "1.0.0",
+  "description": "Grand Azure Luxury Hotel Management System - Monorepo",
+  "private": true,
+  "scripts": {
+    "start": "npm start --prefix backend",
+    "dev": "npm run dev --prefix backend",
+    "test": "npm test --prefix backend",
+    "check:db": "node backend/server/checkSupabase.js"
+  },
+  "keywords": [
+    "hotel-management",
+    "express",
+    "supabase",
+    "hospitality"
+  ],
+  "author": "",
+  "license": "ISC"
+}

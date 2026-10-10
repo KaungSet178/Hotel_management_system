@@ -1,0 +1,8 @@
+# Backend-specific ignore rules
+node_modules/
+.env
+.env.production
+*.env
+!.env.example
+!.env.production.example
+*.log

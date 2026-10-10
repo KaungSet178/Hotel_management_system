@@ -1,0 +1,44 @@
+# ==============================================================================
+# Git Ignore Rules for Grand Azure Hotel Management System
+# ==============================================================================
+
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Environment Variables & Secrets (CRITICAL: NEVER COMMIT)
+.env
+*.env
+.env.*
+!.env.example
+!.env.production.example
+backend/.env
+backend/.env.production
+backend/*.env
+backend/.env.*
+!backend/.env.example
+!backend/.env.production.example
+
+# Binaries & Download Artifacts
+*.exe
+*.zip
+*.tar.gz
+bin/
+stripe.exe
+
+# Build Output & Logs
+dist/
+build/
+coverage/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# System & IDE Specific Files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.system_generated/
+scratch/
