@@ -1,39 +1,42 @@
 # Grand Azure Luxury Resort & Hotel Management System
 
-A unified, end-to-end hospitality platform connecting guest experiences with internal hotel operations.
+A unified, end-to-end hospitality platform connecting customer-facing luxury booking experiences with internal hotel management operations.
 
 ---
 
 ## Repository Structure
 
 ```text
-Hotel_management_system/
+hotel_management_system/
 ├── backend/                  # Node.js + Express + Supabase Backend Engine
 │   ├── server/               # Express API Gateway, Middleware & Services
+│   │   ├── routes/           # customerRoutes.js (15 customer guest REST endpoints)
 │   │   ├── middleware/       # Auth, RBAC guards, Rate limiters, Validation
 │   │   ├── services/         # KBZPay & Stripe dual payment services
-│   │   ├── validators/       # Zod schemas
+│   │   ├── validators/       # Zod schemas (Bookings, Services, Rooms)
 │   │   ├── qrService.js      # HMAC cryptographic QR pass generator
 │   │   ├── checkSupabase.js  # Live cloud database diagnostic tool
 │   │   ├── test-suite.js     # 46-test automated verification suite
-│   │   └── index.js          # Main Express server entry point
+│   │   └── index.js          # Express server entry point & SSE realtime stream
 │   ├── supabase/             # PostgreSQL database schemas, migrations & functions
-│   │   ├── migrations/       # Versioned SQL migrations (001 - 004)
-│   │   ├── functions/        # Deno Edge Functions
-│   │   └── COMPLETE_DATABASE_SETUP.sql # Consolidated 1-click cloud setup
-│   ├── public/               # Static demo client portal
+│   │   ├── migrations/       # SQL Migrations (001 - 007)
+│   │   ├── functions/        # Deno Edge Functions (cancellation cron)
+│   │   └── COMPLETE_DATABASE_SETUP.sql # Consolidated cloud setup script
+│   ├── public/               # Static demo assets
 │   ├── .env.example          # Example environment variable template
 │   ├── .env.production.example # Production environment variable template
-│   ├── API_DOCUMENTATION.md  # Complete REST API reference
-│   ├── BACKEND_SETUP.md      # Backend developer setup guide
-│   └── PROGRESS_TRACKER.md   # Architectural milestones & test status
-├── frontend/                 # Existing frontend application(s)
-│   └── README.md             # Frontend developer guidelines & API connection
-├── customer-frontend/        # StayFlow customer-facing React + Vite application
-│   └── README.md             # Customer app setup, scripts and architecture
-├── .gitignore                # Production git ignore configuration
+│   ├── API_DOCUMENTATION.md  # Master Unified REST API reference
+│   └── BACKEND_SETUP.md      # Backend developer & database setup guide
+├── customer-frontend/        # StayFlow Luxury Guest Web Application
+│   ├── src/                  # React 18, TypeScript, Tailwind CSS
+│   ├── API_CONTRACTS.md      # Customer frontend API specifications
+│   ├── README.md             # Customer web app documentation & architecture
+│   ├── vitest.config.ts      # 38 automated frontend tests
+│   └── package.json          # Frontend dependencies & scripts
+├── .gitignore                # Git ignore configuration
 ├── package.json              # Monorepo task runner
-└── README.md                 # Project overview
+├── PROJECT_ROADMAP_AND_STATUS.md # Master project status & remaining implementation roadmap
+└── README.md                 # Project overview (this document)
 ```
 
 ---
@@ -41,54 +44,60 @@ Hotel_management_system/
 ## Tech Stack
 
 * **Backend Engine:** Node.js with Express.js
-* **Database & Auth:** Supabase (PostgreSQL with Row Level Security)
-* **Concurrency:** PostgreSQL Row-Level Locking (`SELECT ... FOR UPDATE`)
-* **Realtime:** Supabase Realtime & Server-Sent Events (SSE)
-* **Automated Background Jobs:** PostgreSQL native `pg_cron`
-* **Payment Gateways:** Dual gateway scaffolding for KBZPay & Stripe (Visa)
-* **Validation & Security:** Zod schemas, Helmet security headers, Express Rate Limit
+* **Database & Auth:** Supabase (PostgreSQL with Row Level Security & custom ENUMs)
+* **Concurrency Protection:** PostgreSQL Row-Level Locking (`SELECT ... FOR UPDATE` via `book_room_atomic`)
+* **Realtime Streaming:** Supabase Realtime & Server-Sent Events (SSE) at `/api/live-events`
+* **Automated Background Jobs:** PostgreSQL native `pg_cron` (24-hour unpaid booking cancellation)
+* **Payment Gateways:** Dual gateway scaffolding for KBZPay & Stripe (Visa/Mastercard)
+* **Validation & Security:** Zod schemas, Helmet security headers, Express Rate Limiting
+* **Customer Frontend:** React 18, TypeScript, Vite, Tailwind CSS, Lucide icons, Vitest
 
 ---
 
-## Getting Started
+## Quick Start Guide
 
-### Customer Frontend Setup
+### 1. Prerequisites
+- Node.js (v18+)
+- Active Supabase account (or local Supabase CLI)
+
+### 2. Environment Configuration
+Set up the backend environment variables:
 ```bash
-# Navigate to the customer-facing application
-cd customer-frontend
-
-# Install dependencies and start the app
-npm install
-npm run dev
+cp backend/.env.example backend/.env
+# Update backend/.env with your Supabase URL, keys, and secrets
 ```
 
-The `frontend/` directory is kept separate for the existing frontend project(s).
+### 3. Running from Root Monorepo
+From the repository root, you can control both backend and frontend applications:
 
-### 1. Backend Setup
 ```bash
-# Navigate to the backend directory
-cd backend
+# Start the Express Backend API (http://localhost:3000)
+npm run dev
 
-# Install dependencies
-npm install
+# Start the StayFlow Customer Frontend (http://localhost:5173)
+npm run frontend:dev
 
-# Copy environment variables and configure your Supabase keys
-cp .env.example .env
-
-# Run automated test suite (46 tests)
+# Run Backend Automated Integration Tests (46 passing tests)
 npm test
 
-# Start the backend server
-npm start
-```
+# Run Frontend Automated Vitest Tests (44 passing tests)
+npm run frontend:test
 
-### 2. Live Database Synchronization
-To verify database connectivity against Supabase:
-```bash
+# Verify Live Supabase Cloud Database Connectivity
 npm run check:db
+
+# Build Customer Frontend for Production
+npm run frontend:build
 ```
 
 ---
 
-## API Documentation
-See [backend/API_DOCUMENTATION.md](backend/API_DOCUMENTATION.md) for full endpoint specifications, role permissions, and request/response examples.
+## Documentation Directory
+
+| Document | Description |
+| :--- | :--- |
+| [**backend/API_DOCUMENTATION.md**](backend/API_DOCUMENTATION.md) | **Master Unified API Specification**: All 15 Customer endpoints, Staff Operations endpoints, Dual Payment gateways, and SSE Realtime events. |
+| [**backend/BACKEND_SETUP.md**](backend/BACKEND_SETUP.md) | **Backend Architecture & Database Setup Guide**: Migrations 001–007, Supabase CLI deployment, dual-auth model, and concurrency rules. |
+| [**PROJECT_ROADMAP_AND_STATUS.md**](PROJECT_ROADMAP_AND_STATUS.md) | **Master Roadmap & Status**: Completed phases, test verification metrics, and detailed backlog of remaining work (Staff Portal UI, Payment Slip approval, Production deployment). |
+| [**customer-frontend/README.md**](customer-frontend/README.md) | **Customer Web App Guide**: Architecture, service modes (`mock` vs `http`), state management, and design system. |
+| [**customer-frontend/API_CONTRACTS.md**](customer-frontend/API_CONTRACTS.md) | **StayFlow Frontend Contracts**: Exact request/response shapes consumed by the customer UI. |

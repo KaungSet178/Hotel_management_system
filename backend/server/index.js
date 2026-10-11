@@ -21,7 +21,7 @@ const {
 } = require('./supabaseClient');
 const { createSecureQrToken, generateQrDataUrl, generateInRoomQr } = require('./qrService');
 const { startCancellationJob } = require('./cancellationJob');
-const { requireAuth } = require('./middleware/auth');
+const { requireAuth, requireVerifiedEmail } = require('./middleware/auth');
 const { requireRole } = require('./middleware/roles');
 const { createPrepayOrder, verifyWebhookSignature } = require('./services/kbzPayService');
 const { createCheckoutSession, constructEvent } = require('./services/stripeService');
@@ -170,7 +170,8 @@ app.post(
   }
 );
 
-app.use(express.json());
+app.use(express.json({ limit: '15mb' }));
+app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // ----------------------------------------------------------------------------
@@ -220,6 +221,14 @@ realtimeBus.on('service_request:updated', (data) => broadcastEvent('service_requ
 // ----------------------------------------------------------------------------
 // API Endpoints
 // ----------------------------------------------------------------------------
+
+// Mount Customer-Facing Frontend Router (StayFlow MVP Contracts)
+const customerRoutes = require('./routes/customerRoutes');
+app.use('/api', customerRoutes);
+
+// Mount Customer Authentication Router
+const { router: authRoutes } = require('./routes/authRoutes');
+app.use('/api/auth', authRoutes);
 
 // 1. Health & Config
 app.get('/api/config', (req, res) => {
@@ -325,7 +334,7 @@ app.get('/api/bookings/:query', requireAuth, async (req, res) => {
   }
 });
 
-app.post('/api/bookings', strictLimiter, requireAuth, validateRequest(createBookingSchema), async (req, res, next) => {
+app.post('/api/bookings', strictLimiter, requireAuth, requireVerifiedEmail, validateRequest(createBookingSchema), async (req, res, next) => {
   try {
     const {
       room_id,
@@ -349,7 +358,7 @@ app.post('/api/bookings', strictLimiter, requireAuth, validateRequest(createBook
     const effectiveName = req.user.role === 'GUEST' ? (req.user.full_name || guest_name || 'Guest') : (guest_name || req.user.full_name);
 
     // Generate Unique Reference & Cryptographic Token
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    const randomSuffix = `${Math.floor(1000 + Math.random() * 9000)}-${Date.now().toString().slice(-4)}`;
     const booking_reference = `LUX-${randomSuffix}`;
     const tempBookingId = require('crypto').randomUUID();
     const qr_token = createSecureQrToken(tempBookingId, booking_reference);

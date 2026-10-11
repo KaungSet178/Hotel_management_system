@@ -8,8 +8,15 @@ import {
   phoneDigits,
   signInWithEmail,
   signInWithGoogle,
+  signInWithPassword,
+  signUpWithEmail,
   signOut,
   updateSession,
+  validateEmail,
+  validatePassword,
+  getLastLoginEmail,
+  getLastLoginAt,
+  getLastLoginName,
 } from './auth';
 
 describe('auth session', () => {
@@ -22,7 +29,7 @@ describe('auth session', () => {
   });
 
   it('signs in with Google as the demo guest and persists', async () => {
-    const user = await signInWithGoogle();
+    const user = (await signInWithGoogle()) as import('@/types').UserProfile;
     expect(user.provider).toBe('google');
     expect(user.email).toBe(DEMO_ACCOUNT.email);
     expect(getSession()?.id).toBe(user.id);
@@ -81,5 +88,79 @@ describe('loyalty + initials helpers', () => {
     expect(initialsOf('Thant Zin')).toBe('TZ');
     expect(initialsOf('Cher')).toBe('CH');
     expect(initialsOf('  ')).toBe('SF');
+  });
+});
+
+describe('email and password validation', () => {
+  it('validates email format correctly', () => {
+    expect(validateEmail('')).toBe('Please enter an email address.');
+    expect(validateEmail('invalid-email')).toBe('Please enter a valid email address.');
+    expect(validateEmail('missing@domain')).toBe('Please enter a valid email address.');
+    expect(validateEmail('@missinguser.com')).toBe('Please enter a valid email address.');
+    expect(validateEmail('valid.user@example.com')).toBeNull();
+  });
+
+  it('enforces password complexity and length', () => {
+    expect(validatePassword('')).toBe('Please enter a password.');
+    expect(validatePassword('short1')).toBe('Password must be at least 8 characters long.');
+    expect(validatePassword('nouppernumber')).toBe('Password must contain both letters and at least one number.');
+    expect(validatePassword('123456789')).toBe('Password must contain both letters and at least one number.');
+    expect(validatePassword('SecretPass123')).toBeNull();
+  });
+});
+
+describe('email registration and authentication', () => {
+  beforeEach(() => {
+    signOut();
+  });
+
+  it('rejects registration with invalid email or weak password', async () => {
+    await expect(
+      signUpWithEmail({ email: 'bademail', password: 'ValidPass1', fullName: 'Tester' }),
+    ).rejects.toThrow('valid email address');
+
+    await expect(
+      signUpWithEmail({ email: 'good@example.com', password: 'weak', fullName: 'Tester' }),
+    ).rejects.toThrow('at least 8 characters');
+  });
+
+  it('registers and signs in user with email', async () => {
+    const res = await signUpWithEmail({
+      email: 'guest.new@stayflow.com',
+      password: 'SecurePassword1',
+      fullName: 'New Guest',
+    });
+
+    expect(res.user.email).toBe('guest.new@stayflow.com');
+    expect(res.user.fullName).toBe('New Guest');
+    expect(getSession()?.email).toBe('guest.new@stayflow.com');
+  });
+
+  it('authenticates with signInWithPassword', async () => {
+    const user = await signInWithPassword({
+      email: 'returning.guest@stayflow.com',
+      password: 'SecurePassword1',
+    });
+
+    expect(user.email).toBe('returning.guest@stayflow.com');
+    expect(getSession()?.email).toBe('returning.guest@stayflow.com');
+  });
+
+  it('remembers the last login email and timestamp even after sign out', async () => {
+    await signInWithPassword({
+      email: 'remembered.guest@stayflow.com',
+      password: 'SecurePassword1',
+    });
+
+    expect(getLastLoginEmail()).toBe('remembered.guest@stayflow.com');
+    expect(getLastLoginAt()).toBeTruthy();
+    expect(getLastLoginName()).toBeTruthy();
+
+    signOut();
+
+    expect(getSession()).toBeNull();
+    // Email remains remembered for returning guest convenience
+    expect(getLastLoginEmail()).toBe('remembered.guest@stayflow.com');
+    expect(getLastLoginName()).toBeTruthy();
   });
 });

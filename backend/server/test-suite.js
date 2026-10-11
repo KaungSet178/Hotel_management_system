@@ -6,7 +6,7 @@
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = 'http://127.0.0.1:3000';
 const { generateSignature } = require('./services/kbzPayService');
 const { generateWebhookSignatureHeader } = require('./services/stripeService');
 

@@ -15,6 +15,8 @@ import { ReservationDetailPage } from '@/pages/ReservationDetailPage';
 import { GuestServicesPage } from '@/pages/GuestServicesPage';
 import { GuestServicesEntryPage } from '@/pages/GuestServicesEntryPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
+import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
+import { VerifyEmailPage } from '@/pages/VerifyEmailPage';
 
 export function App() {
   return (
@@ -34,6 +36,8 @@ export function App() {
               <Route path="reservations/:reference" element={<ReservationDetailPage />} />
               <Route path="reservations/:reference/services" element={<GuestServicesPage />} />
               <Route path="guest-services" element={<GuestServicesEntryPage />} />
+              <Route path="reset-password" element={<ResetPasswordPage />} />
+              <Route path="verify-email" element={<VerifyEmailPage />} />
               <Route path="*" element={<NotFoundPage />} />
             </Route>
           </Routes>

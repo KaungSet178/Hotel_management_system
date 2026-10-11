@@ -21,6 +21,7 @@ import { LoadingState, ErrorState } from '@/components/ui/states';
 import { useAsync } from '@/hooks/useAsync';
 import { hotels } from '@/services';
 import { formatMMK } from '@/lib/currency';
+import { todayPlus } from '@/lib/dates';
 import type { RoomListing } from '@/services/types';
 
 const STATS = [
@@ -51,7 +52,7 @@ const STANDARDS = [
 export function HomePage() {
   const featured = useAsync(() => hotels.getFeaturedRooms(3).then((r) => r.data), []);
 
-  const heroImage = featured.data?.[0]?.hotel.heroImage;
+  const heroImage = featured.data?.[0]?.hotel?.heroImage;
 
   return (
     <div>
@@ -183,9 +184,11 @@ export function HomePage() {
 function FeaturedCard({ listing }: { listing: RoomListing }) {
   const { room, hotel, fromNightly } = listing;
   const nightRange = `${room.areaSqm} m²`;
+  const defaultQuery = `?dest=${hotel.slug || hotel.id}&in=${todayPlus(7)}&out=${todayPlus(10)}&adults=2&rooms=1`;
+
   return (
     <Card className="flex h-full flex-col overflow-hidden">
-      <Link to={`/rooms/${room.id}`} className="relative block">
+      <Link to={`/rooms/${room.id}${defaultQuery}`} className="relative block">
         <ImageWithFallback
           src={room.images[0]?.src ?? hotel.heroImage}
           alt={room.images[0]?.alt ?? room.name}
@@ -223,7 +226,7 @@ function FeaturedCard({ listing }: { listing: RoomListing }) {
             <p className="text-lg font-bold text-brand-800">{formatMMK(fromNightly)}</p>
           </div>
           <Link
-            to={`/rooms/${room.id}`}
+            to={`/rooms/${room.id}${defaultQuery}`}
             className={buttonStyles('outline', 'sm')}
             aria-label={`Explore ${room.name}`}
           >

@@ -40,7 +40,7 @@ const globalLimiter = rateLimit({
   limit: parseInt(process.env.GLOBAL_RATE_LIMIT, 10) || (process.env.NODE_ENV === 'test' ? 1000 : 100),
   standardHeaders: 'draft-7',
   legacyHeaders: false,
-  validate: { trustProxy: false },
+  validate: false,
   keyGenerator,
   handler: rateLimitHandler
 });
@@ -55,7 +55,7 @@ const strictLimiter = rateLimit({
   limit: parseInt(process.env.STRICT_RATE_LIMIT, 10) || 10,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
-  validate: { trustProxy: false },
+  validate: false,
   keyGenerator: (req) => `${keyGenerator(req)}:${req.baseUrl || ''}${req.path || ''}`,
   handler: rateLimitHandler
 });

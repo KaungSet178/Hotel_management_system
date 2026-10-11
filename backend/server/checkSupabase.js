@@ -13,7 +13,7 @@ async function testConnection() {
   });
 
   console.log('\n--- Checking Relational Tables ---');
-  const tables = ['rooms', 'bookings', 'profiles', 'room_service_requests', 'audit_logs'];
+  const tables = ['destinations', 'hotels', 'rooms', 'bookings', 'profiles', 'room_service_requests', 'audit_logs'];
 
   for (const table of tables) {
     const { data, count, error } = await supabase.from(table).select('*', { count: 'exact' }).limit(5);

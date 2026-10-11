@@ -28,6 +28,7 @@ import { Checkbox, Field, Input, Select, Textarea } from '@/components/ui/form';
 import { StepsBar } from '@/components/booking/StepsBar';
 import { PriceSummary } from '@/components/booking/PriceSummary';
 import { BookingAuthGate } from '@/components/booking/BookingAuthGate';
+import { EmailVerificationGate } from '@/components/booking/EmailVerificationGate';
 import { PaymentInstructions } from '@/components/booking/PaymentInstructions';
 import { ImageWithFallback } from '@/components/ui/image';
 import { ErrorState, LoadingState } from '@/components/ui/states';
@@ -92,6 +93,7 @@ const PAYMENT_METHODS: PaymentMethodMeta[] = [
 export function BookPage() {
   const { user } = useAuth();
   if (!user) return <BookingAuthGate />;
+  if (user.isEmailVerified === false) return <EmailVerificationGate />;
   return <BookingFlow />;
 }
 

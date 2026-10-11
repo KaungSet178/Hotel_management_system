@@ -76,11 +76,27 @@ async function requireAuth(req, res, next) {
 
     // 1. Check local/test token registry
     if (DEMO_TOKENS[token]) {
-      req.user = { ...DEMO_TOKENS[token] };
+      req.user = { ...DEMO_TOKENS[token], is_email_verified: true };
       return next();
     }
 
-    // 2. Validate via Supabase Auth when configured
+    // 2. Check Customer JWT Token (issued by /api/auth)
+    try {
+      const { verifyCustomerToken } = require('../routes/authRoutes');
+      const customerPayload = verifyCustomerToken(token);
+      if (customerPayload) {
+        req.user = {
+          id: customerPayload.id,
+          email: customerPayload.email,
+          full_name: customerPayload.full_name,
+          role: customerPayload.role || 'GUEST',
+          is_email_verified: customerPayload.is_email_verified ?? true
+        };
+        return next();
+      }
+    } catch (e) {
+      // Continue to Supabase Auth fallback
+    }
     if (isConfigured && supabase) {
       const { data: authData, error: authErr } = await supabase.auth.getUser(token);
 
@@ -93,13 +109,62 @@ async function requireAuth(req, res, next) {
       }
 
       const user = authData.user;
+      const isEmailVerified = Boolean(user.email_confirmed_at || user.confirmed_at);
 
       // Query profiles table for role
-      const { data: profile } = await supabase
+      let { data: profile } = await supabase
         .from('profiles')
         .select('id, email, full_name, role')
         .eq('id', user.id)
         .maybeSingle();
+
+      if (!profile) {
+        const fallbackName =
+          user.user_metadata?.full_name ||
+          user.user_metadata?.name ||
+          user.email?.split('@')[0] ||
+          'Guest';
+
+        const userEmail = (user.email || '').trim().toLowerCase();
+
+        // 1. Check if profile exists by email under a legacy or mock ID
+        if (userEmail) {
+          const { data: existingByEmail } = await supabase
+            .from('profiles')
+            .select('id, email, full_name, role')
+            .eq('email', userEmail)
+            .maybeSingle();
+
+          if (existingByEmail) {
+            const { data: updatedProfile } = await supabase
+              .from('profiles')
+              .update({ id: user.id, full_name: fallbackName })
+              .eq('id', existingByEmail.id)
+              .select()
+              .maybeSingle();
+            if (updatedProfile) profile = updatedProfile;
+          }
+        }
+
+        // 2. Otherwise insert or upsert
+        if (!profile) {
+          const { data: newProfile, error: insErr } = await supabase
+            .from('profiles')
+            .upsert({
+              id: user.id,
+              email: userEmail,
+              full_name: fallbackName,
+              role: 'GUEST'
+            }, { onConflict: 'id' })
+            .select()
+            .maybeSingle();
+          if (newProfile) {
+            profile = newProfile;
+          } else if (insErr) {
+            console.warn('[requireAuth] Profile upsert error:', insErr.message);
+          }
+        }
+      }
 
       const userRole = profile?.role || 'GUEST';
 
@@ -107,7 +172,8 @@ async function requireAuth(req, res, next) {
         id: user.id,
         email: user.email,
         full_name: profile?.full_name || user.user_metadata?.full_name || user.email,
-        role: userRole
+        role: userRole,
+        is_email_verified: isEmailVerified
       };
 
       return next();
@@ -120,7 +186,8 @@ async function requireAuth(req, res, next) {
         id: memoryProfile.id,
         email: memoryProfile.email,
         full_name: memoryProfile.full_name,
-        role: memoryProfile.role
+        role: memoryProfile.role,
+        is_email_verified: true
       };
       return next();
     }
@@ -142,7 +209,54 @@ async function requireAuth(req, res, next) {
   }
 }
 
+/**
+ * Ensures the authenticated user has a verified email address.
+ * Rejects with 403 Forbidden if email is unverified.
+ */
+function requireVerifiedEmail(req, res, next) {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      error: 'Authentication required before completing reservation.',
+      code: 'UNAUTHORIZED'
+    });
+  }
+
+  // Admin and Receptionist staff can create or manage bookings
+  if (['ADMIN', 'RECEPTIONIST'].includes(req.user.role)) {
+    return next();
+  }
+
+  if (req.user.is_email_verified !== true) {
+    return res.status(403).json({
+      success: false,
+      error: 'Email verification is required before you can complete a room reservation. Please verify your email.',
+      code: 'EMAIL_NOT_VERIFIED'
+    });
+  }
+
+  next();
+}
+
+/**
+ * Optional authentication middleware: if Authorization header is present,
+ * populates req.user. If absent or invalid, proceeds with req.user = null.
+ */
+async function optionalAuth(req, res, next) {
+  const authHeader = req.headers.authorization || req.headers.Authorization;
+  if (!authHeader) {
+    req.user = null;
+    return next();
+  }
+  return requireAuth(req, res, (err) => {
+    if (err) req.user = null;
+    next();
+  });
+}
+
 module.exports = {
   requireAuth,
+  requireVerifiedEmail,
+  optionalAuth,
   DEMO_TOKENS
 };
