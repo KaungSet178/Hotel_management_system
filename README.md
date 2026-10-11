@@ -27,8 +27,10 @@ Hotel_management_system/
 │   ├── API_DOCUMENTATION.md  # Complete REST API reference
 │   ├── BACKEND_SETUP.md      # Backend developer setup guide
 │   └── PROGRESS_TRACKER.md   # Architectural milestones & test status
-├── frontend/                 # Client applications (Web, Mobile, Admin Dashboard)
+├── frontend/                 # Existing frontend application(s)
 │   └── README.md             # Frontend developer guidelines & API connection
+├── customer-frontend/        # StayFlow customer-facing React + Vite application
+│   └── README.md             # Customer app setup, scripts and architecture
 ├── .gitignore                # Production git ignore configuration
 ├── package.json              # Monorepo task runner
 └── README.md                 # Project overview
@@ -49,6 +51,18 @@ Hotel_management_system/
 ---
 
 ## Getting Started
+
+### Customer Frontend Setup
+```bash
+# Navigate to the customer-facing application
+cd customer-frontend
+
+# Install dependencies and start the app
+npm install
+npm run dev
+```
+
+The `frontend/` directory is kept separate for the existing frontend project(s).
 
 ### 1. Backend Setup
 ```bash

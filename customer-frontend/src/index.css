@@ -1,0 +1,62 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+
+  --color-brand-50: #f0f7f6;
+  --color-brand-100: #dceeec;
+  --color-brand-200: #bcded9;
+  --color-brand-300: #93c6c0;
+  --color-brand-400: #63a6a0;
+  --color-brand-500: #3f8a83;
+  --color-brand-600: #2c6f6a;
+  --color-brand-700: #1f5a55;
+  --color-brand-800: #174a46;
+  --color-brand-900: #103a36;
+  --color-brand-950: #0a2d2a;
+
+  --color-lavender-50: #f9f8fd;
+  --color-lavender-100: #f3f0fa;
+  --color-lavender-200: #e8e2f6;
+  --color-lavender-300: #d7ccef;
+
+  --color-ink: #142624;
+  --color-ink-soft: #4b605d;
+  --color-ink-mute: #718682;
+
+  --shadow-card: 0 1px 2px rgb(16 42 38 / 0.05), 0 10px 30px -18px rgb(16 42 38 / 0.25);
+  --shadow-pop: 0 8px 40px -12px rgb(16 42 38 / 0.3);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-lavender-50 font-sans text-ink antialiased;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brand-500);
+    outline-offset: 2px;
+  }
+
+  input[type='date'] {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  input[type='date']::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.6;
+  }
+}
+
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
