@@ -34,6 +34,7 @@ coverage/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+*.tsbuildinfo
 
 # System & IDE Specific Files
 .DS_Store

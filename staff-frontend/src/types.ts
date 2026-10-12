@@ -112,3 +112,69 @@ export interface CheckInOutcome {
   expiringCount: number;
   arrivedCount: number;
 }
+
+export type UserRole = 'ADMIN' | 'RECEPTIONIST' | 'HOUSEKEEPING';
+
+export interface StaffUser {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  title: string;
+  station: string;
+  avatarText: string;
+}
+
+export type BookingChannel = 'WALK_IN' | 'ONLINE';
+
+export interface ChannelRecord {
+  id: string;
+  ref: string;
+  guestName: string;
+  nrcOrPassport?: string;
+  phone: string;
+  roomNumber: string;
+  roomCategory: string;
+  channel: BookingChannel;
+  checkIn: string;
+  checkOut: string;
+  nights: number;
+  adults: number;
+  ratePlan: string;
+  totalAmount: number;
+  paymentMethod: string;
+  paymentStatus: string;
+  clerkOrSource: string;
+  leadTimeDays?: number;
+  specialNotes?: string;
+}
+
+export interface AuditLogRecord {
+  id: string;
+  timestamp: string;
+  actor: string;
+  actorRole: UserRole | 'SYSTEM';
+  action: string;
+  entityType: string;
+  entityId: string;
+  details: string;
+  ipAddress?: string;
+}
+
+export interface ExecutiveMetrics {
+  totalRooms: number;
+  occupiedRooms: number;
+  availableRooms: number;
+  maintenanceRooms: number;
+  occupancyRate: number;
+  adr: number;
+  revPar: number;
+  mtdRevenue: number;
+  netRoomRevenue: number;
+  serviceCharge10: number;
+  commercialTax5: number;
+  walkInRevenue: number;
+  onlineRevenue: number;
+  walkInCount: number;
+  onlineCount: number;
+}

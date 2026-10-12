@@ -98,6 +98,7 @@ npm run frontend:build
 | :--- | :--- |
 | [**backend/API_DOCUMENTATION.md**](backend/API_DOCUMENTATION.md) | **Master Unified API Specification**: All 15 Customer endpoints, Staff Operations endpoints, Dual Payment gateways, and SSE Realtime events. |
 | [**backend/BACKEND_SETUP.md**](backend/BACKEND_SETUP.md) | **Backend Architecture & Database Setup Guide**: Migrations 001–007, Supabase CLI deployment, dual-auth model, and concurrency rules. |
+| [**ADMIN_AND_STAFF_PORTAL_DOCUMENTATION.md**](ADMIN_AND_STAFF_PORTAL_DOCUMENTATION.md) | **Staff & Admin Management Portal Architecture**: Supabase Auth, RBAC, strict role isolation, Executive suite, and Front Desk operations. |
 | [**PROJECT_ROADMAP_AND_STATUS.md**](PROJECT_ROADMAP_AND_STATUS.md) | **Master Roadmap & Status**: Completed phases, test verification metrics, and detailed backlog of remaining work (Staff Portal UI, Payment Slip approval, Production deployment). |
 | [**customer-frontend/README.md**](customer-frontend/README.md) | **Customer Web App Guide**: Architecture, service modes (`mock` vs `http`), state management, and design system. |
 | [**customer-frontend/API_CONTRACTS.md**](customer-frontend/API_CONTRACTS.md) | **StayFlow Frontend Contracts**: Exact request/response shapes consumed by the customer UI. |

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   Bell,
   Building2,
@@ -17,9 +17,10 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/cn';
-import { NAV_ITEMS } from '@/nav';
+import { ADMIN_NAV_ITEMS, NAV_ITEMS } from '@/nav';
 import { LOCALE } from '@/data/seed';
 import { useAppStore } from '@/store';
+import { useAuth } from '@/auth';
 import { useToast } from '@/components/toast';
 import { ProfileModal } from '@/components/profile';
 import { Avatar, CountBadge } from '@/components/ui';
@@ -53,18 +54,31 @@ function SidebarContent({
   onOpenProfile: () => void;
 }) {
   const { requests, bookings } = useAppStore();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const toast = useToast();
+
+  const isAdmin = user?.role === 'ADMIN';
+
   const queueCount = requests.filter(
     (r) => r.state === 'PROOF_UPLOADED' || r.state === 'ROOM_CONFLICT',
   ).length;
   const arrivalsCount = bookings.filter(
     (b) => b.status === 'PENDING' || b.status === 'CONFIRMED',
   ).length;
+
   const countFor = (path: string): number => {
     if (path === '/requests') return queueCount;
     if (path === '/availability' || path === '/qr-checkin') return arrivalsCount;
     return 0;
   };
+
+  const handleLogout = async () => {
+    await logout();
+    toast.info('Signed out of StayFlow portal');
+    navigate('/login');
+  };
+
   return (
     <nav className="flex h-full w-64 flex-col bg-primary-container text-[#ecf1ff]">
       <div className="px-5 pt-5 pb-4">
@@ -72,73 +86,134 @@ function SidebarContent({
         <div className="mt-4 flex items-center justify-between rounded-lg bg-white/8 px-3 py-2">
           <div className="flex items-center gap-1">
             <MapPin className="h-3.5 w-3.5 text-[#86f2e4]" />
-            <span className="text-label-sm font-medium text-white/90">{LOCALE.desk}</span>
+            <span className="text-label-sm font-medium text-white/90">
+              {user?.station || LOCALE.desk}
+            </span>
           </div>
-          <span className="rounded-full bg-white/12 px-2 py-0.5 text-label-sm text-[#86f2e4]">
-            {LOCALE.shift}
+          <span className="rounded-full bg-white/12 px-2 py-0.5 text-label-xs font-semibold text-[#86f2e4]">
+            {user?.role || 'STAFF'}
           </span>
         </div>
       </div>
 
-      <p className="px-5 pt-2 pb-1.5 text-label-sm font-semibold tracking-wider text-white/40">
-        STAFF DESK
-      </p>
-
-      <div className="scrollbar-none flex-1 space-y-1 overflow-y-auto px-3 py-1">
-        {NAV_ITEMS.map((item) => {
-          const Icon = item.icon;
-          return (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              onClick={onNavigate}
-              className={({ isActive }) =>
-                cn(
-                  'group flex items-center gap-3 rounded-lg px-3 py-2.5 transition',
-                  isActive
-                    ? 'bg-white text-[#0e1c32] shadow-sm'
-                    : 'text-white/80 hover:bg-white/10 hover:text-white',
-                )
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  <Icon className={cn('h-[18px] w-[18px]', isActive ? 'text-[#0e1c32]' : 'text-[#89f5e7]')} />
-                  <span className="flex-1 text-label-md font-medium">{item.label}</span>
-                  {countFor(item.to) > 0 && (
-                    <CountBadge
-                      count={countFor(item.to)}
-                      className={cn(
+      <div className="scrollbar-none flex-1 space-y-4 overflow-y-auto px-3 py-1">
+        {/* Strictly Isolated Navigation: Admin sees ONLY Admin nav, Staff sees ONLY Staff nav */}
+        {isAdmin ? (
+          <div>
+            <p className="px-2 pb-1.5 text-label-xs font-bold tracking-wider text-[#89f5e7]">
+              EXECUTIVE MANAGEMENT
+            </p>
+            <div className="space-y-1">
+              {ADMIN_NAV_ITEMS.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    end={item.to === '/admin'}
+                    onClick={onNavigate}
+                    className={({ isActive }) =>
+                      cn(
+                        'group flex items-center gap-3 rounded-lg px-3 py-2 transition',
                         isActive
-                          ? 'bg-primary-container text-white'
-                          : 'bg-secondary-container text-on-secondary-container',
-                      )}
-                    />
-                  )}
-                  <ChevronRight className="h-3.5 w-3.5 opacity-40" />
-                </>
-              )}
-            </NavLink>
-          );
-        })}
+                          ? 'bg-white text-[#0e1c32] shadow-sm font-semibold'
+                          : 'text-white/80 hover:bg-white/10 hover:text-white',
+                      )
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        <Icon
+                          className={cn(
+                            'h-[18px] w-[18px]',
+                            isActive ? 'text-[#0e1c32]' : 'text-[#89f5e7]',
+                          )}
+                        />
+                        <span className="flex-1 text-label-md font-medium">{item.label}</span>
+                        <ChevronRight className="h-3.5 w-3.5 opacity-40" />
+                      </>
+                    )}
+                  </NavLink>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <div>
+            <p className="px-2 pb-1.5 text-label-xs font-semibold tracking-wider text-white/40">
+              OPERATIONS & FRONT DESK
+            </p>
+            <div className="space-y-1">
+              {NAV_ITEMS.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    onClick={onNavigate}
+                    className={({ isActive }) =>
+                      cn(
+                        'group flex items-center gap-3 rounded-lg px-3 py-2 transition',
+                        isActive
+                          ? 'bg-white text-[#0e1c32] shadow-sm font-semibold'
+                          : 'text-white/80 hover:bg-white/10 hover:text-white',
+                      )
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        <Icon
+                          className={cn(
+                            'h-[18px] w-[18px]',
+                            isActive ? 'text-[#0e1c32]' : 'text-[#89f5e7]',
+                          )}
+                        />
+                        <span className="flex-1 text-label-md font-medium">{item.label}</span>
+                        {countFor(item.to) > 0 && (
+                          <CountBadge
+                            count={countFor(item.to)}
+                            className={cn(
+                              isActive
+                                ? 'bg-primary-container text-white'
+                                : 'bg-secondary-container text-on-secondary-container',
+                            )}
+                          />
+                        )}
+                        <ChevronRight className="h-3.5 w-3.5 opacity-40" />
+                      </>
+                    )}
+                  </NavLink>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
+      {/* User Card & Logout */}
       <div className="border-t border-white/10 p-4">
         <button
           type="button"
           onClick={onOpenProfile}
           className="flex w-full items-center gap-2.5 rounded-lg px-1 py-1 text-left transition hover:bg-white/10"
         >
-          <Avatar name={LOCALE.staffName} className="h-9 w-9 bg-secondary-container text-on-secondary-container" />
+          <Avatar
+            name={user?.name || LOCALE.staffName}
+            className="h-9 w-9 bg-secondary-container text-on-secondary-container"
+          />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-label-md font-semibold text-white">{LOCALE.staffName}</p>
-            <p className="truncate text-label-sm text-white/50">{LOCALE.staffRole}</p>
+            <p className="truncate text-label-md font-semibold text-white">
+              {user?.name || LOCALE.staffName}
+            </p>
+            <p className="truncate text-label-xs text-white/50">
+              {user?.title || LOCALE.staffRole}
+            </p>
           </div>
           <ChevronDown className="h-4 w-4 text-white/60" />
         </button>
         <button
           type="button"
-          onClick={() => toast.info('Signed out · see you next shift')}
+          onClick={handleLogout}
           className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-white/12 py-2 text-label-md font-medium text-white/80 transition hover:bg-white/10"
         >
           <LogOut className="h-4 w-4" />
@@ -197,10 +272,15 @@ function NotificationsPanel({
 export function Shell() {
   const toast = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useAuth();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [query, setQuery] = useState('');
+
+  const isAdminView = location.pathname.startsWith('/admin');
+
   const [notifications, setNotifications] = useState<BellItem[]>([
     {
       Icon: FileText,
@@ -266,7 +346,7 @@ export function Shell() {
 
           <div className="hidden items-center gap-1.5 rounded-full bg-secondary-container px-2.5 py-1 text-label-sm font-medium text-on-secondary-container md:inline-flex">
             <MapPin className="h-3.5 w-3.5" />
-            Third Floor – Main Wing
+            {isAdminView ? 'Executive Management Suite' : 'Front Desk 01 • Main Wing'}
           </div>
 
           <form
@@ -320,12 +400,14 @@ export function Shell() {
             onClick={() => setProfileOpen(true)}
             className="flex items-center gap-2.5 rounded-lg px-1 py-1 transition hover:bg-surface-container-low"
           >
-            <Avatar name={LOCALE.staffName} />
+            <Avatar name={user?.name || LOCALE.staffName} />
             <div className="hidden text-left sm:block">
               <p className="text-label-md leading-4 font-semibold text-on-surface">
-                {LOCALE.staffName}
+                {user?.name || LOCALE.staffName}
               </p>
-              <p className="text-label-sm leading-4 text-on-surface-variant">{LOCALE.staffRole}</p>
+              <p className="text-label-sm leading-4 text-on-surface-variant">
+                {user?.title || LOCALE.staffRole}
+              </p>
             </div>
             <ChevronDown className="hidden h-4 w-4 text-on-surface-variant sm:block" />
           </button>
