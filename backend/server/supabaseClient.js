@@ -338,14 +338,74 @@ async function createAtomicBooking(bookingData) {
     payment_method,
     payment_status = 'PENDING',
     qr_token,
-    booking_reference
+    booking_reference,
+    folio_id = null,
+    pin = null,
+    draft_key = null,
+    adults = 2,
+    rooms_count = 1,
+    rate_plan_id = 'flexible',
+    add_ons = [],
+    price_breakdown = {},
+    guest_preferences = {},
+    special_notes = null,
+    payment_proof = null,
+    booking_status = 'CONFIRMED'
   } = bookingData;
 
   // If connected to Supabase, invoke the PL/pgSQL RPC
   if (isConfigured && supabase) {
-    const validGuestId = (guest_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(guest_id))
+    let validGuestId = (guest_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(guest_id))
       ? guest_id
       : null;
+
+    // Safety check: ensure guest_id actually exists in public.profiles to satisfy bookings_guest_id_fkey
+    if (validGuestId) {
+      try {
+        const { data: pCheck } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', validGuestId)
+          .maybeSingle();
+
+        if (!pCheck) {
+          // Check if profile exists by email with a different ID (e.g. from local tests)
+          const targetEmail = (guest_email || '').trim().toLowerCase();
+          if (targetEmail) {
+            const { data: existingByEmail } = await supabase
+              .from('profiles')
+              .select('id')
+              .eq('email', targetEmail)
+              .maybeSingle();
+
+            if (existingByEmail) {
+              await supabase
+                .from('profiles')
+                .update({ id: validGuestId })
+                .eq('id', existingByEmail.id);
+            } else {
+              const { error: insErr } = await supabase
+                .from('profiles')
+                .upsert({
+                  id: validGuestId,
+                  email: targetEmail,
+                  full_name: guest_name || 'Guest',
+                  role: 'GUEST'
+                }, { onConflict: 'id' });
+
+              if (insErr) {
+                console.warn('[createAtomicBooking] Auto-provisioning profile failed, falling back to null guest_id:', insErr.message);
+                validGuestId = null;
+              }
+            }
+          } else {
+            validGuestId = null;
+          }
+        }
+      } catch (checkErr) {
+        console.warn('[createAtomicBooking] Profile verification failed, proceeding with fallback:', checkErr.message);
+      }
+    }
 
     const { data, error } = await supabase.rpc('book_room_atomic', {
       p_room_id: room_id,
@@ -359,7 +419,19 @@ async function createAtomicBooking(bookingData) {
       p_payment_method: payment_method,
       p_payment_status: payment_status,
       p_qr_token: qr_token,
-      p_booking_reference: booking_reference
+      p_booking_reference: booking_reference,
+      p_folio_id: folio_id || null,
+      p_pin: pin || null,
+      p_draft_key: draft_key || null,
+      p_adults: Number(adults) || 2,
+      p_rooms_count: Number(rooms_count) || 1,
+      p_rate_plan_id: rate_plan_id || 'flexible',
+      p_add_ons: add_ons || [],
+      p_price_breakdown: price_breakdown || {},
+      p_guest_preferences: guest_preferences || {},
+      p_special_notes: special_notes || null,
+      p_payment_proof: payment_proof || null,
+      p_booking_status: booking_status || 'CONFIRMED'
     });
 
     if (error) {

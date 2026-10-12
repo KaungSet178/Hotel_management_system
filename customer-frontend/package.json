@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
+    "@supabase/supabase-js": "^2.117.3",
     "date-fns": "^4.4.0",
     "jspdf": "^4.2.1",
     "lucide-react": "^1.55.0",

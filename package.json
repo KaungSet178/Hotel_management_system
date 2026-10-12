@@ -7,7 +7,10 @@
     "start": "npm start --prefix backend",
     "dev": "npm run dev --prefix backend",
     "test": "npm test --prefix backend",
-    "check:db": "node backend/server/checkSupabase.js"
+    "check:db": "node backend/server/checkSupabase.js",
+    "frontend:dev": "npm run dev --prefix customer-frontend",
+    "frontend:build": "npm run build --prefix customer-frontend",
+    "frontend:test": "npm test --prefix customer-frontend"
   },
   "keywords": [
     "hotel-management",

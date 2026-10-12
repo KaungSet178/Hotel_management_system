@@ -267,6 +267,7 @@ export interface UserProfile {
   avatarUrl?: string;
   provider: AuthProvider;
   createdAt: string;
+  isEmailVerified?: boolean;
 }
 
 export interface ServiceResultMeta {

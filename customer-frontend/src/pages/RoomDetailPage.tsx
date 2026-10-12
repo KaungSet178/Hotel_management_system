@@ -1,8 +1,10 @@
-import { Link, useParams } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
   Bath,
   BedDouble,
+  CalendarDays,
   Check,
   Clock,
   Expand,
@@ -16,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Rating } from '@/components/ui/rating';
 import { Card } from '@/components/ui/card';
 import { Button, buttonStyles } from '@/components/ui/button';
+import { Input } from '@/components/ui/form';
 import { Gallery } from '@/components/hotel/Gallery';
 import { ErrorState, LoadingState } from '@/components/ui/states';
 import { useAsync } from '@/hooks/useAsync';
@@ -23,7 +26,7 @@ import { useStayQuery } from '@/hooks/useStayQuery';
 import { hotels } from '@/services';
 import { computeBreakdown } from '@/lib/pricing';
 import { formatMMK } from '@/lib/currency';
-import { formatRange } from '@/lib/dates';
+import { addDaysISO, formatRange, todayPlus } from '@/lib/dates';
 
 const HIGHLIGHTS: Record<string, { title: string; body: string; icon: typeof Sparkles }[]> = {
   default: [
@@ -48,6 +51,8 @@ const HIGHLIGHTS: Record<string, { title: string; body: string; icon: typeof Spa
 export function RoomDetailPage() {
   const { roomId = '' } = useParams();
   const stay = useStayQuery();
+  const [, setSearchParams] = useSearchParams();
+  const [isChangingDates, setIsChangingDates] = useState(false);
 
   const roomQuery = useAsync(() => hotels.getRoom(roomId).then((r) => r.data), [roomId]);
   const availabilityQuery = useAsync(
@@ -195,9 +200,72 @@ export function RoomDetailPage() {
         {/* Sticky booking rail */}
         <aside className="lg:sticky lg:top-24 lg:h-fit">
           <Card className="p-5">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-ink-mute">
-              Booking Details
-            </h2>
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-ink-mute">
+                Booking Details
+              </h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsChangingDates((v) => !v)}
+                className="h-7 px-2 text-xs text-brand-700 hover:text-brand-900"
+                aria-expanded={isChangingDates}
+              >
+                <CalendarDays className="mr-1 h-3.5 w-3.5 text-brand-600" aria-hidden="true" />
+                {isChangingDates ? 'Done' : 'Change dates'}
+              </Button>
+            </div>
+
+            {isChangingDates && (
+              <div className="mt-3 rounded-xl border border-brand-900/10 bg-lavender-50/70 p-3 text-xs">
+                <p className="mb-2 font-semibold text-ink">Adjust dates for live availability &amp; pricing</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label htmlFor="rail-checkin" className="mb-1 block text-[11px] font-medium text-ink-soft">
+                      Check-in
+                    </label>
+                    <Input
+                      id="rail-checkin"
+                      type="date"
+                      value={stay.checkIn}
+                      min={todayPlus(0)}
+                      onChange={(e) => {
+                        const newIn = e.target.value;
+                        const minOut = addDaysISO(newIn, 1);
+                        const newOut = stay.checkOut <= newIn ? minOut : stay.checkOut;
+                        setSearchParams((prev) => {
+                          const n = new URLSearchParams(prev);
+                          n.set('in', newIn);
+                          n.set('out', newOut);
+                          return n;
+                        });
+                      }}
+                      className="h-8 bg-white px-2 py-1 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="rail-checkout" className="mb-1 block text-[11px] font-medium text-ink-soft">
+                      Check-out
+                    </label>
+                    <Input
+                      id="rail-checkout"
+                      type="date"
+                      value={stay.checkOut}
+                      min={addDaysISO(stay.checkIn, 1)}
+                      onChange={(e) => {
+                        const newOut = e.target.value;
+                        setSearchParams((prev) => {
+                          const n = new URLSearchParams(prev);
+                          n.set('out', newOut);
+                          return n;
+                        });
+                      }}
+                      className="h-8 bg-white px-2 py-1 text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
 
             <dl className="mt-4 space-y-2 text-sm">
               <div className="flex items-center justify-between gap-3">

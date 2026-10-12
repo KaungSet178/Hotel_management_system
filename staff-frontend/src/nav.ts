@@ -1,10 +1,14 @@
 import {
+  BarChart3,
   BedDouble,
   BookCheck,
   BookMarked,
   ConciergeBell,
   KeyRound,
+  ReceiptText,
   ScanLine,
+  ShieldCheck,
+  Users,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -14,6 +18,39 @@ export interface NavItem {
   to: string;
   icon: LucideIcon;
 }
+
+export const ADMIN_NAV_ITEMS: NavItem[] = [
+  {
+    label: 'Executive Overview',
+    description: 'RevPAR, ADR & Occupancy metrics',
+    to: '/admin',
+    icon: BarChart3,
+  },
+  {
+    label: 'Room Management & Pricing',
+    description: 'Room catalog, dynamic rates & maintenance',
+    to: '/admin/rooms',
+    icon: BedDouble,
+  },
+  {
+    label: 'Channel Analytics',
+    description: 'Monthly walk-ins vs online reservations',
+    to: '/admin/channels',
+    icon: Users,
+  },
+  {
+    label: 'Financial & Tax Ledger',
+    description: '10% service, 5% tax & CSV exports',
+    to: '/admin/finances',
+    icon: ReceiptText,
+  },
+  {
+    label: 'Policy & Audit Logs',
+    description: '24-hr hold policy and security trails',
+    to: '/admin/audit',
+    icon: ShieldCheck,
+  },
+];
 
 export const NAV_ITEMS: NavItem[] = [
   {

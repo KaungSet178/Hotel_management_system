@@ -67,6 +67,39 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Automatic Auth Users to Public Profiles Synchronisation Trigger
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO public.profiles (
+        id,
+        email,
+        full_name,
+        role,
+        created_at,
+        updated_at
+    ) VALUES (
+        NEW.id,
+        LOWER(TRIM(NEW.email)),
+        COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', split_part(NEW.email, '@', 1), 'Guest'),
+        'GUEST',
+        NOW(),
+        NOW()
+    )
+    ON CONFLICT (id) DO UPDATE SET
+        email = EXCLUDED.email,
+        full_name = COALESCE(EXCLUDED.full_name, public.profiles.full_name),
+        updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW
+    EXECUTE FUNCTION public.handle_new_user();
+
 -- Rooms Inventory Table
 CREATE TABLE IF NOT EXISTS public.rooms (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -151,36 +184,124 @@ ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.rooms ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.bookings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.room_service_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.destinations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.hotels ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 
--- Profiles Policies
+-- Helper function for role lookup that avoids RLS infinite recursion
+CREATE OR REPLACE FUNCTION public.current_user_role()
+RETURNS text AS $$
+DECLARE
+    u_role text;
+BEGIN
+    SELECT role::text INTO u_role FROM public.profiles WHERE id = auth.uid();
+    RETURN COALESCE(u_role, 'GUEST');
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
+
+-- Profiles Policies: Users view and update own profile; Staff/Admin view all
 DROP POLICY IF EXISTS "Public profiles read" ON public.profiles;
-CREATE POLICY "Public profiles read" ON public.profiles FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_select_policy" ON public.profiles;
+CREATE POLICY "profiles_select_policy" ON public.profiles
+    FOR SELECT USING (auth.uid() = id OR current_user_role() IN ('ADMIN', 'RECEPTIONIST'));
+
+DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_insert_policy" ON public.profiles;
+CREATE POLICY "profiles_insert_policy" ON public.profiles
+    FOR INSERT WITH CHECK (auth.uid() = id OR current_user_role() IN ('ADMIN', 'RECEPTIONIST'));
 
 DROP POLICY IF EXISTS "Users update own profile" ON public.profiles;
-CREATE POLICY "Users update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_update_policy" ON public.profiles;
+CREATE POLICY "profiles_update_policy" ON public.profiles
+    FOR UPDATE USING (auth.uid() = id OR current_user_role() = 'ADMIN');
 
--- Rooms Policies
+-- Rooms Policies: Public can browse rooms; Staff and admin modify
 DROP POLICY IF EXISTS "Anyone can view rooms" ON public.rooms;
-CREATE POLICY "Anyone can view rooms" ON public.rooms FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Anyone can browse rooms" ON public.rooms;
+DROP POLICY IF EXISTS "rooms_select_policy" ON public.rooms;
+CREATE POLICY "rooms_select_policy" ON public.rooms FOR SELECT USING (true);
 
--- Bookings Policies
+DROP POLICY IF EXISTS "Staff and admin can modify rooms" ON public.rooms;
+DROP POLICY IF EXISTS "rooms_modify_policy" ON public.rooms;
+CREATE POLICY "rooms_modify_policy" ON public.rooms FOR ALL
+    USING (current_user_role() IN ('ADMIN', 'RECEPTIONIST', 'HOUSEKEEPING'));
+
+-- Bookings Policies: Guests view own bookings; Staff and Admin view all
 DROP POLICY IF EXISTS "Guests can view own bookings" ON public.bookings;
-CREATE POLICY "Guests can view own bookings" ON public.bookings FOR SELECT
-USING (auth.uid() = guest_id OR auth.jwt() ->> 'role' IN ('RECEPTIONIST', 'ADMIN'));
+DROP POLICY IF EXISTS "Guests view own bookings or Staff/Admin view all" ON public.bookings;
+DROP POLICY IF EXISTS "bookings_select_policy" ON public.bookings;
+CREATE POLICY "bookings_select_policy" ON public.bookings FOR SELECT
+    USING (auth.uid() = guest_id OR current_user_role() IN ('ADMIN', 'RECEPTIONIST'));
 
 DROP POLICY IF EXISTS "Guests can insert bookings" ON public.bookings;
-CREATE POLICY "Guests can insert bookings" ON public.bookings FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Guests create bookings" ON public.bookings;
+DROP POLICY IF EXISTS "bookings_insert_policy" ON public.bookings;
+CREATE POLICY "bookings_insert_policy" ON public.bookings FOR INSERT
+    WITH CHECK (auth.uid() = guest_id OR current_user_role() IN ('ADMIN', 'RECEPTIONIST') OR auth.uid() IS NULL);
 
--- Service Requests Policies
+DROP POLICY IF EXISTS "Staff and Admin update bookings" ON public.bookings;
+DROP POLICY IF EXISTS "bookings_update_policy" ON public.bookings;
+CREATE POLICY "bookings_update_policy" ON public.bookings FOR UPDATE
+    USING (auth.uid() = guest_id OR current_user_role() IN ('ADMIN', 'RECEPTIONIST'));
+
+DROP POLICY IF EXISTS "bookings_delete_policy" ON public.bookings;
+CREATE POLICY "bookings_delete_policy" ON public.bookings FOR DELETE
+    USING (current_user_role() = 'ADMIN');
+
+-- Service Requests Policies: Guests view and create for own bookings; Staff manage
 DROP POLICY IF EXISTS "Anyone can view service requests" ON public.room_service_requests;
-CREATE POLICY "Anyone can view service requests" ON public.room_service_requests FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Guests view own service requests; Staff view all" ON public.room_service_requests;
+DROP POLICY IF EXISTS "service_requests_select_policy" ON public.room_service_requests;
+CREATE POLICY "service_requests_select_policy" ON public.room_service_requests FOR SELECT
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.bookings b 
+            WHERE b.id = room_service_requests.booking_id AND b.guest_id = auth.uid()
+        )
+        OR current_user_role() IN ('ADMIN', 'HOUSEKEEPING', 'RECEPTIONIST')
+    );
 
 DROP POLICY IF EXISTS "Guests can create service requests" ON public.room_service_requests;
-CREATE POLICY "Guests can create service requests" ON public.room_service_requests FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Guests and Staff create service requests" ON public.room_service_requests;
+DROP POLICY IF EXISTS "service_requests_insert_policy" ON public.room_service_requests;
+CREATE POLICY "service_requests_insert_policy" ON public.room_service_requests FOR INSERT
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM public.bookings b 
+            WHERE b.id = room_service_requests.booking_id AND b.guest_id = auth.uid()
+        )
+        OR current_user_role() IN ('ADMIN', 'HOUSEKEEPING', 'RECEPTIONIST')
+    );
 
 DROP POLICY IF EXISTS "Staff can update service requests" ON public.room_service_requests;
-CREATE POLICY "Staff can update service requests" ON public.room_service_requests FOR UPDATE USING (true);
+DROP POLICY IF EXISTS "Staff update service requests" ON public.room_service_requests;
+DROP POLICY IF EXISTS "service_requests_update_policy" ON public.room_service_requests;
+CREATE POLICY "service_requests_update_policy" ON public.room_service_requests FOR UPDATE
+    USING (current_user_role() IN ('ADMIN', 'HOUSEKEEPING', 'RECEPTIONIST'));
+
+-- Destinations & Hotels Policies
+DROP POLICY IF EXISTS "Public read destinations" ON public.destinations;
+DROP POLICY IF EXISTS "destinations_select_policy" ON public.destinations;
+CREATE POLICY "destinations_select_policy" ON public.destinations FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "destinations_modify_policy" ON public.destinations;
+CREATE POLICY "destinations_modify_policy" ON public.destinations FOR ALL USING (current_user_role() = 'ADMIN');
+
+DROP POLICY IF EXISTS "Public read hotels" ON public.hotels;
+DROP POLICY IF EXISTS "hotels_select_policy" ON public.hotels;
+CREATE POLICY "hotels_select_policy" ON public.hotels FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "hotels_modify_policy" ON public.hotels;
+CREATE POLICY "hotels_modify_policy" ON public.hotels FOR ALL USING (current_user_role() = 'ADMIN');
+
+-- Audit Logs Policies
+DROP POLICY IF EXISTS "audit_logs_select_policy" ON public.audit_logs;
+CREATE POLICY "audit_logs_select_policy" ON public.audit_logs FOR SELECT USING (current_user_role() = 'ADMIN');
+
+DROP POLICY IF EXISTS "audit_logs_insert_policy" ON public.audit_logs;
+CREATE POLICY "audit_logs_insert_policy" ON public.audit_logs FOR INSERT WITH CHECK (true);
 
 -- ----------------------------------------------------------------------------
 -- 6. REALTIME REPLICATION (SUPABASE REALTIME)

@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import {
   BadgeCheck,
   CalendarDays,
@@ -11,11 +12,14 @@ import {
 import { LOCALE } from '@/data/seed';
 import { mmk } from '@/lib/format';
 import { useAppStore } from '@/store';
+import { useAuth } from '@/auth';
 import { useToast } from '@/components/toast';
 import { Avatar, Button, Modal } from '@/components/ui';
 
 export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { bookings, requests, folio } = useAppStore();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const toast = useToast();
 
   const inHouse = bookings.filter((b) => b.status === 'CHECKED_IN').length;
@@ -25,24 +29,26 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
   ).length;
   const total = folio.roomCharges + folio.incidentals + folio.taxes;
 
-  const handleLogOut = (): void => {
-    toast.info('Signed out · see you next shift, Daw Nu Nu');
+  const handleLogOut = async (): Promise<void> => {
+    await logout();
+    toast.info(`Signed out · see you next shift, ${user?.name || LOCALE.staffName}`);
     onClose();
+    navigate('/login');
   };
 
   return (
     <Modal open={open} onClose={onClose} title="Staff Profile">
       <div className="space-y-4">
         <div className="flex items-center gap-3 rounded-xl bg-surface-container-low p-4">
-          <Avatar name={LOCALE.staffName} className="h-12 w-12 text-title-sm" />
+          <Avatar name={user?.name || LOCALE.staffName} className="h-12 w-12 text-title-sm" />
           <div className="min-w-0">
-            <p className="text-body-md font-semibold text-on-surface">{LOCALE.staffName}</p>
+            <p className="text-body-md font-semibold text-on-surface">{user?.name || LOCALE.staffName}</p>
             <p className="text-label-sm text-on-surface-variant">
-              {LOCALE.staffRole} · {LOCALE.property}
+              {user?.title || LOCALE.staffRole} · {LOCALE.property}
             </p>
             <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-secondary-container px-2 py-0.5 text-label-sm font-medium text-on-secondary-container">
               <BadgeCheck className="h-3 w-3" />
-              Verified staff
+              Verified {user?.role || 'Staff'}
             </span>
           </div>
         </div>

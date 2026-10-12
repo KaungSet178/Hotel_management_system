@@ -60,6 +60,9 @@ export class ApiClient {
       options.signal.addEventListener('abort', () => controller.abort(), { once: true });
     }
 
+    const token = typeof window !== 'undefined' ? window.localStorage.getItem('stayflow.auth.token') : null;
+    const authHeader: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+
     let response: Response;
     try {
       response = await fetch(url.toString(), {
@@ -67,6 +70,7 @@ export class ApiClient {
         headers: {
           Accept: 'application/json',
           ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+          ...authHeader,
           ...options.headers,
         },
         body: options.body ? JSON.stringify(options.body) : undefined,
