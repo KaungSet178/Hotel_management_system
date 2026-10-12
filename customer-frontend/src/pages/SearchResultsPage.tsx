@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { CalendarDays, Filter, RefreshCw, SlidersHorizontal, Users, X } from 'lucide-react';
 import { Container } from '@/components/ui/section';
+import { Reveal } from '@/components/ui/reveal';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Field, Select } from '@/components/ui/form';
@@ -347,13 +348,14 @@ export function SearchResultsPage() {
             />
           ) : (
             <div className="space-y-4">
-              {filtered.map((listing) => (
-                <RoomListingCard
-                  key={listing.room.id}
-                  listing={listing}
-                  queryString={stay.queryString}
-                  nights={stay.nights}
-                />
+              {filtered.map((listing, index) => (
+                <Reveal key={listing.room.id} delay={Math.min(index, 6) * 60}>
+                  <RoomListingCard
+                    listing={listing}
+                    queryString={stay.queryString}
+                    nights={stay.nights}
+                  />
+                </Reveal>
               ))}
             </div>
           )}

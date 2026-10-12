@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Lock, Eye, EyeOff, CheckCircle2, AlertCircle, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -14,20 +14,16 @@ export function ResetPasswordPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const hash = window.location.hash;
+    if (!hash.includes('error=')) return null;
+    const params = new URLSearchParams(hash.replace(/^#/, ''));
+    const desc =
+      params.get('error_description') || 'This password reset link is invalid or has expired.';
+    return desc.replace(/\+/g, ' ');
+  });
   const [success, setSuccess] = useState(false);
-
-  // Check if hash has error from Supabase
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const hash = window.location.hash;
-      if (hash.includes('error=')) {
-        const params = new URLSearchParams(hash.replace(/^#/, ''));
-        const desc = params.get('error_description') || 'This password reset link is invalid or has expired.';
-        setError(desc.replace(/\+/g, ' '));
-      }
-    }
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

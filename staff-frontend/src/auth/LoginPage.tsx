@@ -17,7 +17,7 @@ import { DEMO_PRESETS, useAuth } from '@/auth';
 import { useToast } from '@/components/toast';
 
 export function LoginPage() {
-  const { login } = useAuth();
+  const { login, isOffline } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
 
@@ -95,9 +95,22 @@ export function LoginPage() {
           <div className="mb-5 border-b border-white/10 pb-4">
             <h2 className="text-title-lg font-semibold text-white">Sign In to Your Station</h2>
             <p className="mt-0.5 text-body-sm text-white/65">
-              Secure authentication powered directly by Supabase Cloud.
+              {isOffline
+                ? 'Offline demo mode — Supabase is unreachable, using local accounts.'
+                : 'Secure authentication powered directly by Supabase Cloud.'}
             </p>
           </div>
+
+          {/* Offline demo banner */}
+          {isOffline && (
+            <div className="mb-5 flex items-start gap-2.5 rounded-xl border border-[#89f5e7]/30 bg-[#89f5e7]/10 p-3.5 text-[#bff7ef]">
+              <AlertCircle className="h-5 w-5 shrink-0 text-[#89f5e7] mt-0.5" />
+              <p className="text-body-sm font-medium leading-tight">
+                Supabase Cloud could not be reached. Running in offline demo mode — use one of the
+                pre-provisioned accounts below and press Sign In.
+              </p>
+            </div>
+          )}
 
           {/* Error Banner */}
           {errorMessage && (

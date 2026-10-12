@@ -139,6 +139,23 @@
   }
 }
 
+@keyframes scanline {
+  0% {
+    transform: translateY(-3.5rem);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(3.5rem);
+    opacity: 0;
+  }
+}
+
 @utility scrollbar-none {
   scrollbar-width: none;
   &::-webkit-scrollbar {

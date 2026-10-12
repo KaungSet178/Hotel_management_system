@@ -3,6 +3,24 @@ export function mmk(value: number): string {
   return `${Math.round(value).toLocaleString('en-US')} MMK`;
 }
 
+/** Front-desk exchange rate: 1 USD = 4,000 MMK. */
+export const USD_RATE = 4000;
+
+/** Format an MMK amount as US dollars, e.g. `$189.75`. */
+export function usd(valueMmk: number): string {
+  return `$${(valueMmk / USD_RATE).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
+export type DisplayCurrency = 'MMK' | 'USD';
+
+/** Format an MMK amount in the requested display currency. */
+export function formatCurrency(valueMmk: number, currency: DisplayCurrency): string {
+  return currency === 'USD' ? usd(valueMmk) : mmk(valueMmk);
+}
+
 /** Human label like `18 Oct` / `18 Oct 2025`. */
 export function shortDate(iso: string, withYear = false): string {
   const [y, m, d] = iso.split('-').map(Number);

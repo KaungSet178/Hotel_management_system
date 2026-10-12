@@ -37,7 +37,6 @@ const STANDARD_AMENITIES = [
 
 export function AddRoomModal({ open, onClose, onAdd }: AddRoomModalProps) {
   const toast = useToast();
-  if (!open) return null;
 
   const [number, setNumber] = useState('');
   const [floor, setFloor] = useState(3);
@@ -53,6 +52,8 @@ export function AddRoomModal({ open, onClose, onAdd }: AddRoomModalProps) {
     'High-speed WiFi',
     'Espresso Bar',
   ]);
+
+  if (!open) return null;
 
   const toggleAmenity = (item: string) => {
     setAmenities((prev) =>

@@ -21,17 +21,17 @@ export function RoomListingCard({ listing, queryString, nights }: RoomListingCar
   return (
     <article
       className={cn(
-        'overflow-hidden rounded-2xl border border-brand-900/8 bg-white shadow-card transition-shadow',
-        soldOut ? 'opacity-90' : 'hover:shadow-pop',
+        'group overflow-hidden rounded-2xl border border-brand-900/8 bg-white shadow-card transition-[transform,box-shadow] duration-300',
+        soldOut ? 'opacity-90' : 'hover:-translate-y-1 hover:shadow-pop',
       )}
     >
       <div className="grid gap-0 md:grid-cols-[minmax(0,320px)_1fr]">
-        <div className="relative">
+        <div className="relative overflow-hidden">
           <ImageWithFallback
             src={room.images[0]?.src ?? hotel.heroImage}
             alt={room.images[0]?.alt ?? room.name}
             seed={room.id}
-            className="h-56 w-full object-cover md:h-full"
+            className="h-56 w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105 md:h-full"
           />
           <div className="absolute left-3 top-3 flex flex-wrap gap-2">
             {room.tags.slice(0, 1).map((tag) => (

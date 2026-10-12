@@ -4,6 +4,7 @@ import { ADD_ONS, HOTELS, ratePlansForRoom } from '@/mock/seed';
 import { computeBreakdown, refundPercent } from '@/lib/pricing';
 import { nightsBetween, todayISO } from '@/lib/dates';
 import { generateFolioId, generatePin, generateReference } from '@/lib/refs';
+import { submitPaymentProof } from '@/lib/paymentProofs';
 import { grantAccess, getAccess } from '@/lib/access';
 import { getSession, matchesProfile } from '@/lib/auth';
 import { computeAvailability } from './availability';
@@ -88,6 +89,32 @@ export const mockBookingService: BookingService = {
 
     const booking = materialize(input);
     mockDb.update((db) => ({ ...db, bookings: [booking, ...db.bookings] }));
+
+    // Share the uploaded payment screenshot with the front desk. Mirrors the
+    // future backend call; best-effort so the booking still succeeds offline.
+    if (booking.paymentProof) {
+      try {
+        await submitPaymentProof({
+          bookingRef: booking.reference,
+          fileName: booking.paymentProof.fileName,
+          mimeType: booking.paymentProof.mimeType,
+          dataUrl: booking.paymentProof.dataUrl,
+          uploadedAt: booking.paymentProof.uploadedAt,
+          guestName: booking.guest.fullName,
+          phone: `${booking.guest.phoneCountryCode} ${booking.guest.phone}`.trim(),
+          amount: booking.price.total,
+          payer: booking.guest.fullName,
+          txnRef: booking.transactionId,
+          room: booking.room.name,
+          roomCategory: booking.room.category,
+          stay: `${booking.stay.checkIn} → ${booking.stay.checkOut}`,
+          nights: booking.nights,
+        });
+      } catch {
+        // The guest app works fully offline; the desk simply won't see the image.
+      }
+    }
+
     return delay(result(booking), 420);
   },
 

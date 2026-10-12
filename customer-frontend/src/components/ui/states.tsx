@@ -10,7 +10,10 @@ export function Spinner({ className }: { className?: string }) {
 export function LoadingState({ label = 'Loading…', className }: { label?: string; className?: string }) {
   return (
     <div
-      className={cn('flex flex-col items-center justify-center gap-3 py-16 text-ink-soft', className)}
+      className={cn(
+        'flex animate-fade-in flex-col items-center justify-center gap-3 py-16 text-ink-soft',
+        className,
+      )}
       role="status"
       aria-live="polite"
     >
@@ -84,5 +87,5 @@ export function ErrorState({
 }
 
 export function Skeleton({ className }: { className?: string }) {
-  return <div className={cn('animate-pulse rounded-xl bg-lavender-200/70', className)} aria-hidden="true" />;
+  return <div className={cn('skeleton rounded-xl', className)} aria-hidden="true" />;
 }

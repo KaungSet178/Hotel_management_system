@@ -80,26 +80,35 @@ function ServiceCard({
 
       <p className="mt-2.5 text-body-sm text-on-surface-variant">{request.quote}</p>
 
+      {request.assignee && (
+        <p className="mt-1.5 text-label-sm text-on-surface-variant">{request.assignee}</p>
+      )}
+
       <div className="mt-3 flex items-center justify-between gap-2 border-t border-outline-variant/40 pt-2.5">
-        {request.assignee ? (
-          <span className="truncate text-label-sm text-on-surface-variant">{request.assignee}</span>
-        ) : (
-          <span className="text-label-sm text-on-surface-variant">Unassigned</span>
-        )}
-        {request.state !== 'COMPLETED' ? (
-          <Button variant="ghost" size="sm" onClick={onMoveNext}>
-            {actionLabel}
-          </Button>
-        ) : (
-          <span className="flex items-center gap-1 text-label-sm font-medium text-secondary">
-            <CheckCheck className="h-3.5 w-3.5" />
-            Guest signed
+          <span
+            className={cn(
+              'rounded-full px-2 py-0.5 text-label-sm font-semibold',
+              request.charge > 0
+                ? 'bg-tertiary-fixed text-on-tertiary-fixed-variant'
+                : 'bg-surface-container text-on-surface-variant',
+            )}
+          >
+            {request.charge > 0 ? `${request.charge.toLocaleString('en-US')} MMK` : 'Complimentary'}
           </span>
-        )}
-      </div>
-    </article>
-  );
-}
+          {request.state !== 'COMPLETED' ? (
+            <Button variant="ghost" size="sm" onClick={onMoveNext}>
+              {actionLabel}
+            </Button>
+          ) : (
+            <span className="flex items-center gap-1 text-label-sm font-medium text-secondary">
+              <CheckCheck className="h-3.5 w-3.5" />
+              Guest signed
+            </span>
+          )}
+        </div>
+      </article>
+    );
+  }
 
 function NewServiceModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { rooms, addServiceRequest } = useAppStore();
@@ -111,6 +120,7 @@ function NewServiceModal({ open, onClose }: { open: boolean; onClose: () => void
   const [guest, setGuest] = useState('');
   const [title, setTitle] = useState('');
   const [details, setDetails] = useState('');
+  const [charge, setCharge] = useState('0');
   const [urgent, setUrgent] = useState(false);
 
   const submit = (): void => {
@@ -119,20 +129,27 @@ function NewServiceModal({ open, onClose }: { open: boolean; onClose: () => void
       return;
     }
     const targetRoom = room || occupied[0]?.number || '—';
+    const chargeValue = Math.max(0, Math.round(Number(charge.replace(/[^0-9.]/g, '')) || 0));
     addServiceRequest({
       category,
       room: targetRoom,
       title: title.trim(),
       guest: guest.trim(),
       quote: details.trim() || 'No additional details provided.',
+      charge: chargeValue,
       urgency: urgent ? 'URGENT' : undefined,
     });
-    toast.success(`Raised · ${title.trim()} · Room ${targetRoom}`);
+    toast.success(
+      chargeValue > 0
+        ? `Raised · ${title.trim()} · Room ${targetRoom} · ${chargeValue.toLocaleString('en-US')} MMK`
+        : `Raised · ${title.trim()} · Room ${targetRoom}`,
+    );
     setCategory('Housekeeping');
     setRoom('');
     setGuest('');
     setTitle('');
     setDetails('');
+    setCharge('0');
     setUrgent(false);
     onClose();
   };
@@ -182,6 +199,15 @@ function NewServiceModal({ open, onClose }: { open: boolean; onClose: () => void
             placeholder="Quantities, timing, special instructions…"
             value={details}
             onChange={(e) => setDetails(e.target.value)}
+          />
+        </Field>
+
+        <Field label="Charge to folio (MMK)" hint="0 for complimentary services. Added to the guest's check-out incidentals.">
+          <TextInput
+            inputMode="numeric"
+            placeholder="e.g. 25000"
+            value={charge}
+            onChange={(e) => setCharge(e.target.value)}
           />
         </Field>
 

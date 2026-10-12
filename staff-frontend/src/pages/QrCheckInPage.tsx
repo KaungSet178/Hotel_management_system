@@ -1,14 +1,15 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import type { FormEvent } from 'react';
 import {
   BadgeCheck,
   Building2,
   Camera,
+  CheckCircle2,
   KeyRound,
   LogOut,
-  QrCode,
-  Radar,
   ScanLine,
   Smartphone,
+  AlertTriangle,
   UserCheck,
   Users,
 } from 'lucide-react';
@@ -17,6 +18,8 @@ import { mmk } from '@/lib/format';
 import { LOCALE } from '@/data/seed';
 import { useAppStore } from '@/store';
 import { useToast } from '@/components/toast';
+import { QrScanner } from '@/components/qr-scanner';
+import { normalizeRef, parseScan } from '@/lib/qr';
 import {
   Avatar,
   Button,
@@ -27,37 +30,32 @@ import {
 } from '@/components/ui';
 
 const STEPS = [
-  { n: '01', title: 'Scan the guest QR', desc: 'Hold the QR to the reader at the door' },
+  { n: '01', title: 'Scan the guest QR', desc: 'Hold the pass to the camera below' },
   { n: '02', title: 'Verify ID & payment', desc: 'Confirm NRC and the deposit status' },
   { n: '03', title: 'Confirm check-in', desc: 'Release the room and print the key card' },
 ];
 
-function QrFrame() {
-  return (
-    <div className="relative flex h-48 w-48 items-center justify-center rounded-2xl bg-white shadow-[0_20px_60px_-20px_rgba(0,0,0,0.5)]">
-      <span className="absolute top-2 left-2 h-5 w-5 rounded-tl-xl border-t-[3px] border-l-[3px] border-[#0e1c32]" />
-      <span className="absolute top-2 right-2 h-5 w-5 rounded-tr-xl border-t-[3px] border-r-[3px] border-[#0e1c32]" />
-      <span className="absolute bottom-2 left-2 h-5 w-5 rounded-bl-xl border-b-[3px] border-l-[3px] border-[#0e1c32]" />
-      <span className="absolute right-2 bottom-2 h-5 w-5 rounded-br-xl border-r-[3px] border-b-[3px] border-[#0e1c32]" />
-      <div className="relative">
-        <QrCode className="h-32 w-32 text-[#0e1c32]" />
-        <span className="absolute top-1/2 left-1/2 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-lg bg-white">
-          <Building2 className="h-5 w-5 text-[#0e1c32]" />
-        </span>
-      </div>
-      <span className="absolute right-3 bottom-3 flex h-6 w-6 items-center justify-center rounded-full bg-[#0e1c32]">
-        <ScanLine className="h-3.5 w-3.5 text-[#89f5e7]" />
-      </span>
-    </div>
-  );
+interface ScanResult {
+  ok: boolean;
+  ref: string;
+  guest: string;
+  room: string;
+  note: string;
+  at: number;
 }
 
 export function QrCheckInPage() {
   const { bookings, checkInBooking } = useAppStore();
   const toast = useToast();
 
+  const [manualRef, setManualRef] = useState('');
+  const [lastScan, setLastScan] = useState<ScanResult | null>(null);
+
   const expected = useMemo(
-    () => bookings.filter((b) => b.checkIn === '2025-10-18' && (b.status === 'CONFIRMED' || b.status === 'PENDING')),
+    () =>
+      bookings.filter(
+        (b) => b.checkIn === '2025-10-18' && (b.status === 'CONFIRMED' || b.status === 'PENDING'),
+      ),
     [bookings],
   );
   const checkedIn = useMemo(
@@ -65,21 +63,92 @@ export function QrCheckInPage() {
     [bookings],
   );
 
+  const handleQrText = (raw: string): void => {
+    const parsed = parseScan(raw);
+    if (!parsed) {
+      toast.warning('Unrecognised QR code — not a StayFlow check-in pass.');
+      setLastScan({
+        ok: false,
+        ref: '—',
+        guest: 'Unrecognised code',
+        room: '',
+        note: 'The QR did not carry a StayFlow booking reference.',
+        at: Date.now(),
+      });
+      return;
+    }
+
+    const norm = normalizeRef(parsed.ref);
+    const match = bookings.find((b) => normalizeRef(b.ref) === norm);
+
+    if (!match) {
+      toast.warning(`No reservation matches ${parsed.ref}.`);
+      setLastScan({
+        ok: false,
+        ref: parsed.ref,
+        guest: 'No matching reservation',
+        room: '',
+        note: 'Nothing in the rack matches this reference.',
+        at: Date.now(),
+      });
+      return;
+    }
+
+    if (match.status === 'CHECKED_IN') {
+      toast.info(`${match.guestName} is already checked in.`);
+      setLastScan({
+        ok: true,
+        ref: match.ref,
+        guest: match.guestName,
+        room: match.room ?? '—',
+        note: 'Guest is already in-house.',
+        at: Date.now(),
+      });
+      return;
+    }
+
+    if (match.status !== 'CONFIRMED' && match.status !== 'PENDING') {
+      toast.warning(`${match.ref} cannot be released (${match.status}).`);
+      setLastScan({
+        ok: false,
+        ref: match.ref,
+        guest: match.guestName,
+        room: match.room ?? '—',
+        note: `Reservation status is ${match.status}.`,
+        at: Date.now(),
+      });
+      return;
+    }
+
+    if (checkInBooking(match.ref)) {
+      toast.success(`${match.guestName} released · ${match.ref} · ${match.room}`);
+      setLastScan({
+        ok: true,
+        ref: match.ref,
+        guest: match.guestName,
+        room: match.room ?? '—',
+        note: `Released via QR · ${mmk(match.amount)}`,
+        at: Date.now(),
+      });
+    } else {
+      toast.warning(`${match.ref} is not ready to release.`);
+    }
+  };
+
   const release = (ref: string, guest: string): void => {
     if (checkInBooking(ref)) {
-      toast.success(`${guest} scanned & released · ${ref}`);
+      toast.success(`${guest} released · ${ref}`);
     } else {
       toast.warning(`${ref} is not ready to release`);
     }
   };
 
-  const scanNext = (): void => {
-    const next = expected[0];
-    if (!next) {
-      toast.warning('No guests waiting in the scan queue');
-      return;
-    }
-    release(next.ref, next.guestName);
+  const submitManual = (e: FormEvent): void => {
+    e.preventDefault();
+    const value = manualRef.trim();
+    if (!value) return;
+    handleQrText(value.startsWith('{') || value.startsWith('#') ? value : `#${value}`);
+    setManualRef('');
   };
 
   return (
@@ -87,7 +156,7 @@ export function QrCheckInPage() {
       <SectionTitle
         eyebrow="StayFlow · Front Desk"
         title="QR Check-in"
-        description="Contactless, self-service check-in at the door. Guests scan, staff verify, rooms release."
+        description="Contactless, self-service check-in. Guests show their QR pass, the camera releases the room."
         action={
           <StatChip
             label="Expected today"
@@ -108,21 +177,21 @@ export function QrCheckInPage() {
                   'radial-gradient(circle at 82% 12%, rgba(137,245,231,0.22), transparent 42%), radial-gradient(circle at 8% 88%, rgba(134,242,228,0.14), transparent 45%)',
               }}
             />
-            <div className="relative grid grid-cols-1 items-start gap-8 md:grid-cols-[1fr_auto]">
+            <div className="relative grid grid-cols-1 items-start gap-8 md:grid-cols-[1fr_300px]">
               <div>
                 <div className="flex items-center gap-2">
                   <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary-container">
                     <ScanLine className="h-4 w-4 text-on-secondary-container" />
                   </span>
                   <p className="text-label-sm font-semibold tracking-widest text-[#89f5e7] uppercase">
-                    Self-service · Room 305
+                    Live camera · Front desk
                   </p>
                 </div>
                 <h2 className="mt-3 text-headline-xl font-semibold tracking-tight">
-                  Scan the guest QR at the door
+                  Scan the guest QR pass
                 </h2>
                 <p className="mt-2 max-w-md text-body-md text-white/70">
-                  Point the reader at the confirmation QR on the guest phone. We verify ID and
+                  Point the guest's check-in QR at the camera. We match the reference, verify ID and
                   payment, then release the room automatically.
                 </p>
 
@@ -141,21 +210,11 @@ export function QrCheckInPage() {
                 </ol>
               </div>
 
-              <div className="flex flex-col items-center gap-4 md:pr-4">
-                <QrFrame />
-                <div className="flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-label-sm text-white/85">
-                  <Radar className="h-3.5 w-3.5 text-[#89f5e7]" /> Live reader
-                </div>
-                <Button
-                  variant="primary"
-                  className="w-full bg-white text-[#0e1c32] hover:bg-white/90"
-                  onClick={scanNext}
-                >
-                  <ScanLine className="h-4 w-4" />
-                  {expected.length > 0
-                    ? `Scan to release · ${expected.length} waiting`
-                    : 'Scan to release'}
-                </Button>
+              <div className="flex flex-col gap-3">
+                <QrScanner onDecode={handleQrText} />
+                <p className="text-center text-label-sm text-white/55">
+                  Room releases automatically when a valid pass is read.
+                </p>
               </div>
             </div>
 
@@ -171,19 +230,73 @@ export function QrCheckInPage() {
                   v1.2.4
                 </span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="hidden items-center gap-1.5 text-label-sm text-white/60 sm:flex">
-                  <Camera className="h-3.5 w-3.5" />
-                  Input mobile number
-                </span>
-                <div className="flex items-center gap-1 rounded-full border border-white/15 px-1.5 py-1">
-                  {['bg-white', 'bg-white/50', 'bg-white'].map((c, i) => (
-                    <span key={c} className={cn('h-2 w-2 rounded-full', c, i === 1 && 'opacity-50')} />
-                  ))}
-                </div>
-              </div>
+              <span className="flex items-center gap-1.5 text-label-sm text-white/60">
+                <Camera className="h-3.5 w-3.5" />
+                Camera scanning · Chromium browsers
+              </span>
             </div>
           </div>
+
+          <Card className="p-4 sm:p-5">
+            <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_320px]">
+              <form onSubmit={submitManual} className="space-y-2.5">
+                <label className="block text-label-sm font-semibold text-on-surface">
+                  Manual check-in
+                </label>
+                <p className="text-body-sm text-on-surface-variant">
+                  Camera refused or unavailable? Enter the guest's booking reference (e.g.{' '}
+                  <span className="font-semibold text-on-surface">#SF-9481</span>) to release the
+                  room.
+                </p>
+                <div className="flex gap-2">
+                  <input
+                    value={manualRef}
+                    onChange={(e) => setManualRef(e.target.value)}
+                    placeholder="#SF-9481 or SF-89241-K7"
+                    className="h-10 flex-1 rounded-xl border border-outline-variant/60 bg-surface-container-low px-3 text-body-sm font-semibold text-on-surface outline-none focus:border-primary-container focus:bg-white"
+                  />
+                  <Button type="submit" variant="primary" size="md">
+                    <ScanLine className="h-4 w-4" />
+                    Release
+                  </Button>
+                </div>
+              </form>
+
+              <div
+                className={cn(
+                  'rounded-xl border p-4',
+                  !lastScan && 'border-outline-variant/50 bg-surface-container-low/50',
+                  lastScan?.ok && 'border-secondary/30 bg-secondary-container/25',
+                  lastScan && !lastScan.ok && 'border-error/30 bg-error-container/40',
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  {!lastScan && <ScanLine className="h-4 w-4 text-on-surface-variant" />}
+                  {lastScan?.ok && <CheckCircle2 className="h-4 w-4 text-on-secondary-container" />}
+                  {lastScan && !lastScan.ok && (
+                    <AlertTriangle className="h-4 w-4 text-on-error-container" />
+                  )}
+                  <p className="text-label-sm font-bold text-on-surface">
+                    {lastScan ? (lastScan.ok ? 'Check-in confirmed' : 'Scan not accepted') : 'Last scan'}
+                  </p>
+                </div>
+                {lastScan ? (
+                  <div className="mt-2 space-y-0.5">
+                    <p className="text-body-md font-semibold text-on-surface">{lastScan.guest}</p>
+                    <p className="text-label-sm text-on-surface-variant">
+                      {lastScan.ref}
+                      {lastScan.room ? ` · ${lastScan.room}` : ''}
+                    </p>
+                    <p className="text-label-sm text-on-surface-variant">{lastScan.note}</p>
+                  </div>
+                ) : (
+                  <p className="mt-2 text-body-sm text-on-surface-variant">
+                    No pass scanned yet this session.
+                  </p>
+                )}
+              </div>
+            </div>
+          </Card>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <StatChip
@@ -225,15 +338,16 @@ export function QrCheckInPage() {
                     {b.ref} · {b.room}
                   </p>
                 </div>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => release(b.ref, b.guestName)}
-                >
+                <Button variant="secondary" size="sm" onClick={() => release(b.ref, b.guestName)}>
                   Release
                 </Button>
               </div>
             ))}
+            {expected.length === 0 && (
+              <p className="py-2 text-center text-body-sm text-on-surface-variant">
+                No QR guests expected today.
+              </p>
+            )}
           </Panel>
 
           <Panel
@@ -268,8 +382,8 @@ export function QrCheckInPage() {
             <div className="flex items-start gap-2">
               <BadgeCheck className="mt-0.5 h-4 w-4 shrink-0 text-secondary" />
               <p className="text-body-sm text-on-surface-variant">
-                <span className="font-semibold text-on-surface">Scan-to-release</span> enabled.
-                Room keys are printed at the door, no front-desk queue needed.
+                <span className="font-semibold text-on-surface">Scan-to-release</span> enabled. Room
+                keys are printed at the door, no front-desk queue needed.
               </p>
             </div>
           </Card>
