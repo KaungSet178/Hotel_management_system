@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { X, Plus } from 'lucide-react';
+import { X, Plus, Check } from 'lucide-react';
 import type { Room } from '@/types';
 import { useToast } from '@/components/toast';
+import { cn } from '@/lib/cn';
 
 interface AddRoomModalProps {
   open: boolean;
@@ -30,6 +31,8 @@ const STANDARD_AMENITIES = [
   'Espresso Bar',
   'Marble Bath',
   'Work Desk',
+  'Strand Club Access',
+  'Breakfast Inc.',
 ];
 
 export function AddRoomModal({ open, onClose, onAdd }: AddRoomModalProps) {
@@ -77,26 +80,26 @@ export function AddRoomModal({ open, onClose, onAdd }: AddRoomModalProps) {
       status: 'AVAILABLE',
     });
 
-    toast.success(`Room ${number} has been created and added to available inventory.`);
+    toast.success(`Suite ${number} added to active rack matrix.`);
     onClose();
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-[#0b1626]/50 backdrop-blur-xs" onClick={onClose} />
+      <div className="fixed inset-0 bg-[#071322]/60 backdrop-blur-xs transition-opacity" onClick={onClose} />
 
-      <div className="relative z-10 w-full max-w-xl overflow-hidden rounded-2xl border border-outline-variant/60 bg-surface-container-lowest shadow-2xl">
-        <div className="flex items-center justify-between border-b border-outline-variant/50 px-6 py-4">
+      <div className="relative z-10 w-full max-w-xl overflow-hidden rounded-2xl border border-outline-variant/60 bg-surface-container-lowest shadow-2xl animate-[drawer-in_0.15s_ease-out]">
+        <div className="flex items-center justify-between border-b border-outline-variant/40 bg-surface-container-low/40 px-6 py-4">
           <div>
-            <h3 className="text-title-lg font-semibold text-on-surface">Add New Room</h3>
-            <p className="text-body-sm text-on-surface-variant">
-              Register a new luxury suite into Grand Azure inventory
+            <h3 className="text-xl font-bold tracking-tight text-on-surface">Add New Luxury Suite</h3>
+            <p className="mt-0.5 text-body-xs text-on-surface-variant">
+              Register a new room number into Grand Azure's active rack matrix
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full p-1.5 text-on-surface-variant hover:bg-surface-container hover:text-on-surface"
+            className="rounded-full p-1.5 text-on-surface-variant hover:bg-surface-container hover:text-on-surface cursor-pointer"
           >
             <X className="h-5 w-5" />
           </button>
@@ -105,70 +108,118 @@ export function AddRoomModal({ open, onClose, onAdd }: AddRoomModalProps) {
         <form onSubmit={handleSubmit} className="max-h-[75vh] overflow-y-auto p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-label-sm font-medium text-on-surface">
-                Room Number
+              <label className="block text-label-xs font-bold text-on-surface-variant uppercase">
+                Suite Number *
               </label>
               <input
                 type="text"
+                placeholder="e.g. 504"
                 required
-                placeholder="e.g. 308"
                 value={number}
                 onChange={(e) => setNumber(e.target.value)}
-                className="mt-1 h-10 w-full rounded-xl border border-outline-variant/70 bg-surface-container-low px-3 text-body-md text-on-surface outline-none focus:border-primary focus:bg-white"
+                className="mt-1 h-11 w-full rounded-xl border border-outline-variant/60 bg-surface-container-low px-3.5 text-lg font-black text-on-surface outline-none focus:border-[#0e2a4a] focus:bg-white"
               />
             </div>
 
             <div>
-              <label className="block text-label-sm font-medium text-on-surface">Floor Level</label>
-              <input
-                type="number"
-                min="1"
-                max="10"
-                required
+              <label className="block text-label-xs font-bold text-on-surface-variant uppercase">
+                Floor Level
+              </label>
+              <select
                 value={floor}
                 onChange={(e) => setFloor(Number(e.target.value))}
-                className="mt-1 h-10 w-full rounded-xl border border-outline-variant/70 bg-surface-container-low px-3 text-body-md text-on-surface outline-none focus:border-primary focus:bg-white"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className="block text-label-sm font-medium text-on-surface">Category</label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="mt-1 h-10 w-full rounded-xl border border-outline-variant/70 bg-surface-container-low px-3 text-body-sm text-on-surface outline-none focus:border-primary focus:bg-white cursor-pointer"
+                className="mt-1 h-11 w-full rounded-xl border border-outline-variant/60 bg-surface-container-low px-3 text-body-sm font-bold text-on-surface outline-none cursor-pointer"
               >
-                {ROOM_CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
+                {[1, 2, 3, 4, 5].map((fl) => (
+                  <option key={fl} value={fl}>
+                    Floor {fl}
                   </option>
                 ))}
               </select>
             </div>
+          </div>
 
+          <div>
+            <label className="block text-label-xs font-bold text-on-surface-variant uppercase">
+              Suite Category
+            </label>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="mt-1 h-10 w-full rounded-xl border border-outline-variant/60 bg-surface-container-low px-3 text-body-sm font-bold text-on-surface outline-none cursor-pointer"
+            >
+              {ROOM_CATEGORIES.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div>
-              <label className="block text-label-sm font-medium text-on-surface">
-                Wing / Sector
+              <label className="block text-label-xs font-bold text-on-surface-variant uppercase">
+                Bed Config
               </label>
               <input
                 type="text"
                 required
-                value={wing}
-                onChange={(e) => setWing(e.target.value)}
-                className="mt-1 h-10 w-full rounded-xl border border-outline-variant/70 bg-surface-container-low px-3 text-body-md text-on-surface outline-none focus:border-primary focus:bg-white"
+                value={beds}
+                onChange={(e) => setBeds(e.target.value)}
+                className="mt-1 h-10 w-full rounded-xl border border-outline-variant/60 bg-surface-container-low px-3 text-body-sm font-semibold text-on-surface outline-none focus:border-[#0e2a4a] focus:bg-white"
+              />
+            </div>
+
+            <div>
+              <label className="block text-label-xs font-bold text-on-surface-variant uppercase">
+                Max Guests
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="8"
+                required
+                value={maxGuests}
+                onChange={(e) => setMaxGuests(Number(e.target.value))}
+                className="mt-1 h-10 w-full rounded-xl border border-outline-variant/60 bg-surface-container-low px-3 text-body-sm font-semibold text-on-surface outline-none focus:border-[#0e2a4a] focus:bg-white"
+              />
+            </div>
+
+            <div>
+              <label className="block text-label-xs font-bold text-on-surface-variant uppercase">
+                Size (m²)
+              </label>
+              <input
+                type="number"
+                min="15"
+                required
+                value={size}
+                onChange={(e) => setSize(Number(e.target.value))}
+                className="mt-1 h-10 w-full rounded-xl border border-outline-variant/60 bg-surface-container-low px-3 text-body-sm font-semibold text-on-surface outline-none focus:border-[#0e2a4a] focus:bg-white"
               />
             </div>
           </div>
 
-          {/* Rate Setup */}
-          <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
-            <label className="block text-label-sm font-semibold text-primary">
-              Base Price Per Night (MMK)
+          <div>
+            <label className="block text-label-xs font-bold text-on-surface-variant uppercase">
+              Resort Wing / Building Location
             </label>
-            <div className="relative mt-2">
-              <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-body-sm font-bold text-primary">
+            <input
+              type="text"
+              required
+              value={wing}
+              onChange={(e) => setWing(e.target.value)}
+              className="mt-1 h-10 w-full rounded-xl border border-outline-variant/60 bg-surface-container-low px-3 text-body-sm font-semibold text-on-surface outline-none focus:border-[#0e2a4a] focus:bg-white"
+            />
+          </div>
+
+          {/* Rate Input */}
+          <div className="rounded-xl border border-[#0e2a4a]/20 bg-[#0e2a4a]/5 p-4">
+            <label className="block text-label-xs font-bold text-[#0e2a4a] uppercase">
+              Base Nightly Price (MMK)
+            </label>
+            <div className="relative mt-1.5">
+              <span className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-body-sm font-extrabold text-[#0e2a4a]">
                 MMK
               </span>
               <input
@@ -178,53 +229,17 @@ export function AddRoomModal({ open, onClose, onAdd }: AddRoomModalProps) {
                 required
                 value={pricePerNight}
                 onChange={(e) => setPricePerNight(Number(e.target.value))}
-                className="h-10 w-full rounded-xl border border-outline-variant/80 bg-white pl-14 pr-4 text-headline-sm font-bold text-on-surface outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                className="h-11 w-full rounded-xl border border-outline-variant/80 bg-white pl-16 pr-4 text-xl font-black text-on-surface outline-none focus:border-[#0e2a4a]"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className="block text-label-xs font-medium text-on-surface">Beds</label>
-              <input
-                type="text"
-                required
-                value={beds}
-                onChange={(e) => setBeds(e.target.value)}
-                className="mt-1 h-9 w-full rounded-xl border border-outline-variant/70 bg-surface-container-low px-3 text-body-sm text-on-surface outline-none focus:border-primary"
-              />
-            </div>
-            <div>
-              <label className="block text-label-xs font-medium text-on-surface">Max Guests</label>
-              <input
-                type="number"
-                min="1"
-                max="8"
-                required
-                value={maxGuests}
-                onChange={(e) => setMaxGuests(Number(e.target.value))}
-                className="mt-1 h-9 w-full rounded-xl border border-outline-variant/70 bg-surface-container-low px-3 text-body-sm text-on-surface outline-none focus:border-primary"
-              />
-            </div>
-            <div>
-              <label className="block text-label-xs font-medium text-on-surface">Size (m²)</label>
-              <input
-                type="number"
-                min="20"
-                required
-                value={size}
-                onChange={(e) => setSize(Number(e.target.value))}
-                className="mt-1 h-9 w-full rounded-xl border border-outline-variant/70 bg-surface-container-low px-3 text-body-sm text-on-surface outline-none focus:border-primary"
-              />
-            </div>
-          </div>
-
-          {/* Amenities Multi-Select */}
+          {/* Amenities */}
           <div>
-            <label className="block text-label-sm font-medium text-on-surface mb-2">
-              Features & Amenities
+            <label className="block text-label-xs font-bold text-on-surface-variant uppercase mb-2">
+              Amenities & Inclusions
             </label>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {STANDARD_AMENITIES.map((item) => {
                 const active = amenities.includes(item);
                 return (
@@ -232,12 +247,14 @@ export function AddRoomModal({ open, onClose, onAdd }: AddRoomModalProps) {
                     key={item}
                     type="button"
                     onClick={() => toggleAmenity(item)}
-                    className={`rounded-full px-3 py-1 text-label-sm transition ${
+                    className={cn(
+                      'flex items-center gap-1.5 rounded-full px-3 py-1 text-label-xs font-semibold transition cursor-pointer',
                       active
-                        ? 'bg-secondary-container text-on-secondary-container font-medium'
-                        : 'border border-outline-variant/60 bg-surface-container-low text-on-surface-variant hover:bg-surface-container'
-                    }`}
+                        ? 'bg-[#0e2a4a] text-white shadow-xs'
+                        : 'border border-outline-variant/60 bg-surface-container-low text-on-surface-variant hover:bg-surface-container',
+                    )}
                   >
+                    {active && <Check className="h-3 w-3 text-[#89f5e7]" />}
                     {item}
                   </button>
                 );
@@ -245,21 +262,21 @@ export function AddRoomModal({ open, onClose, onAdd }: AddRoomModalProps) {
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center justify-end gap-3 border-t border-outline-variant/50 pt-4">
+          {/* Footer Actions */}
+          <div className="flex items-center justify-end gap-3 border-t border-outline-variant/40 pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl px-4 py-2 text-label-md font-medium text-on-surface-variant hover:bg-surface-container"
+              className="rounded-xl px-4 py-2 text-label-sm font-semibold text-on-surface-variant hover:bg-surface-container transition cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-label-md font-medium text-white shadow-sm hover:brightness-110 active:scale-[0.99]"
+              className="flex items-center gap-2 rounded-xl bg-[#0e2a4a] px-5 py-2.5 text-label-sm font-semibold text-white shadow-xs hover:bg-[#18395f] active:scale-[0.99] transition cursor-pointer"
             >
-              <Plus className="h-4 w-4" />
-              Create Room
+              <Plus className="h-4 w-4 text-[#89f5e7]" />
+              Add Suite to Rack
             </button>
           </div>
         </form>

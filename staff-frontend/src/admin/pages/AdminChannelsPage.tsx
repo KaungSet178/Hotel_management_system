@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react';
 import {
-  Users,
   Globe,
   Search,
   Download,
+  Building,
+  X,
+  User,
 } from 'lucide-react';
 import { useAdminStore } from '../context/AdminStore';
 import { AdminHeader } from '../components/AdminHeader';
@@ -82,6 +84,11 @@ export function AdminChannelsPage() {
     toast.success(`Exported ${filteredRecords.length} records to ${filename}`);
   };
 
+  const walkInPct = metrics.mtdRevenue > 0
+    ? Math.round((metrics.walkInRevenue / metrics.mtdRevenue) * 100)
+    : 0;
+  const onlinePct = 100 - walkInPct;
+
   return (
     <div className="space-y-6">
       <AdminHeader
@@ -96,235 +103,308 @@ export function AdminChannelsPage() {
           <button
             type="button"
             onClick={handleExportCsv}
-            className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-label-md font-medium text-white shadow-xs transition hover:brightness-110 active:scale-[0.99]"
+            className="flex items-center gap-2 rounded-xl bg-[#0e2a4a] px-4 py-2 text-label-sm font-semibold text-white shadow-xs transition hover:bg-[#18395f] active:scale-[0.99] cursor-pointer"
           >
-            <Download className="h-4 w-4" />
+            <Download className="h-4 w-4 text-[#89f5e7]" />
             Export Channel CSV
           </button>
         }
       />
 
-      {/* Top Split & Metric Cards */}
+      {/* Top 3 Balanced KPI Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {/* Total Summary */}
-        <div className="rounded-2xl border border-outline-variant/60 bg-surface-container-lowest p-5 shadow-xs">
-          <p className="text-label-md font-medium text-on-surface-variant">Monthly Gross Revenue</p>
-          <div className="mt-2 flex items-baseline gap-1.5">
-            <span className="text-headline-md font-bold text-on-surface">
+        <div className="flex flex-col justify-between rounded-2xl border border-outline-variant/50 border-l-4 border-l-slate-400 bg-surface-container-lowest p-5 shadow-xs">
+          <div className="flex items-center justify-between">
+            <p className="text-label-sm font-semibold tracking-wide text-on-surface-variant uppercase">
+              Total Monthly Gross
+            </p>
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-surface-container text-[#0e2a4a]">
+              <Building className="h-4 w-4" />
+            </span>
+          </div>
+          <div className="mt-3 flex items-baseline gap-1.5">
+            <span className="text-3xl font-black tracking-tight text-on-surface">
               {metrics.mtdRevenue.toLocaleString()}
             </span>
-            <span className="text-body-sm font-medium text-on-surface-variant">MMK</span>
+            <span className="text-label-sm font-bold text-on-surface-variant">MMK</span>
           </div>
           <p className="mt-3 text-body-xs text-on-surface-variant">
-            {selectedMonthRecords.length} verified guest stays recorded for {selectedMonth}
+            <strong>{selectedMonthRecords.length}</strong> verified guest stays recorded for {selectedMonth}
           </p>
         </div>
 
         {/* Walk-in Card */}
-        <div className="rounded-2xl border border-[#89f5e7]/40 bg-[#89f5e7]/10 p-5 shadow-xs">
+        <div className="flex flex-col justify-between rounded-2xl border border-outline-variant/50 border-l-4 border-l-[#89f5e7] bg-surface-container-lowest p-5 shadow-xs">
           <div className="flex items-center justify-between">
-            <p className="text-label-md font-medium text-[#004f62]">Walk-In Customers</p>
-            <span className="rounded-full bg-white/70 px-2 py-0.5 text-label-xs font-bold text-[#004f62]">
-              Direct Counter
+            <p className="text-label-sm font-semibold tracking-wide text-secondary uppercase">
+              Walk-In Customers (Desk)
+            </p>
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#89f5e7]/20 text-[#071322]">
+              <User className="h-4 w-4" />
             </span>
           </div>
-          <div className="mt-2 flex items-baseline gap-1.5">
-            <span className="text-headline-md font-bold text-[#003644]">
+          <div className="mt-3 flex items-baseline gap-1.5">
+            <span className="text-3xl font-black tracking-tight text-secondary">
               {metrics.walkInRevenue.toLocaleString()}
             </span>
-            <span className="text-body-sm font-medium text-[#004f62]">MMK</span>
+            <span className="text-label-sm font-bold text-on-surface-variant">MMK</span>
           </div>
-          <p className="mt-3 text-body-xs text-[#004f62]">
-            {metrics.walkInCount} Walk-in stays (
-            {metrics.mtdRevenue > 0
-              ? Math.round((metrics.walkInRevenue / metrics.mtdRevenue) * 100)
-              : 0}
-            % of revenue)
-          </p>
+          <div className="mt-3 flex items-center justify-between text-body-xs">
+            <span className="font-semibold text-on-surface">
+              {metrics.walkInCount} Walk-in stays
+            </span>
+            <span className="rounded-full bg-secondary-container/50 px-2 py-0.5 text-label-xs font-bold text-on-secondary-container">
+              {walkInPct}% Revenue Share
+            </span>
+          </div>
         </div>
 
         {/* Online Card */}
-        <div className="rounded-2xl border border-primary/30 bg-primary/10 p-5 shadow-xs">
+        <div className="flex flex-col justify-between rounded-2xl border border-outline-variant/50 border-l-4 border-l-[#0e2a4a] bg-surface-container-lowest p-5 shadow-xs">
           <div className="flex items-center justify-between">
-            <p className="text-label-md font-medium text-primary">Online Direct Reservations</p>
-            <span className="rounded-full bg-white/70 px-2 py-0.5 text-label-xs font-bold text-primary">
-              StayFlow Web App
+            <p className="text-label-sm font-semibold tracking-wide text-[#0e2a4a] uppercase">
+              StayFlow Direct Web App
+            </p>
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#0e2a4a] text-[#89f5e7]">
+              <Globe className="h-4 w-4" />
             </span>
           </div>
-          <div className="mt-2 flex items-baseline gap-1.5">
-            <span className="text-headline-md font-bold text-primary">
+          <div className="mt-3 flex items-baseline gap-1.5">
+            <span className="text-3xl font-black tracking-tight text-[#0e2a4a]">
               {metrics.onlineRevenue.toLocaleString()}
             </span>
-            <span className="text-body-sm font-medium text-primary">MMK</span>
+            <span className="text-label-sm font-bold text-on-surface-variant">MMK</span>
           </div>
-          <p className="mt-3 text-body-xs text-primary">
-            {metrics.onlineCount} Online stays (
-            {metrics.mtdRevenue > 0
-              ? Math.round((metrics.onlineRevenue / metrics.mtdRevenue) * 100)
-              : 0}
-            % of revenue)
-          </p>
+          <div className="mt-3 flex items-center justify-between text-body-xs">
+            <span className="font-semibold text-on-surface">
+              {metrics.onlineCount} Online bookings
+            </span>
+            <span className="rounded-full bg-[#0e2a4a]/10 px-2 py-0.5 text-label-xs font-bold text-[#0e2a4a]">
+              {onlinePct}% Share • 0% Comm.
+            </span>
+          </div>
         </div>
       </div>
 
       {/* Tabs & Controls */}
-      <div className="flex flex-col gap-3 rounded-2xl border border-outline-variant/60 bg-surface-container-lowest p-4 shadow-sm md:flex-row md:items-center md:justify-between">
+      <div className="rounded-2xl border border-outline-variant/50 bg-surface-container-lowest p-4 shadow-xs space-y-4">
         {/* Channel Segment Tabs */}
-        <div className="flex items-center rounded-xl border border-outline-variant/60 bg-surface-container-low p-1">
-          <button
-            type="button"
-            onClick={() => setChannelFilter('ALL')}
-            className={cn(
-              'rounded-lg px-3 py-1.5 text-label-sm font-medium transition',
-              channelFilter === 'ALL'
-                ? 'bg-white text-primary shadow-xs'
-                : 'text-on-surface-variant hover:text-on-surface',
-            )}
-          >
-            All Channels ({selectedMonthRecords.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setChannelFilter('WALK_IN')}
-            className={cn(
-              'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-label-sm font-medium transition',
-              channelFilter === 'WALK_IN'
-                ? 'bg-white text-[#005a70] shadow-xs'
-                : 'text-on-surface-variant hover:text-on-surface',
-            )}
-          >
-            <Users className="h-3.5 w-3.5" />
-            Walk-In List ({metrics.walkInCount})
-          </button>
-          <button
-            type="button"
-            onClick={() => setChannelFilter('ONLINE')}
-            className={cn(
-              'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-label-sm font-medium transition',
-              channelFilter === 'ONLINE'
-                ? 'bg-white text-primary shadow-xs'
-                : 'text-on-surface-variant hover:text-on-surface',
-            )}
-          >
-            <Globe className="h-3.5 w-3.5" />
-            Online Reservations ({metrics.onlineCount})
-          </button>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-outline-variant/30 pb-3">
+          <div className="flex flex-wrap items-center gap-1.5 text-label-xs font-semibold">
+            <button
+              type="button"
+              onClick={() => setChannelFilter('ALL')}
+              className={cn(
+                'flex items-center gap-1.5 rounded-xl px-3 py-1.5 transition cursor-pointer',
+                channelFilter === 'ALL'
+                  ? 'bg-[#0e2a4a] text-white shadow-xs'
+                  : 'bg-surface-container-low text-on-surface-variant hover:text-on-surface hover:bg-surface-container',
+              )}
+            >
+              <span>All Channels</span>
+              <span
+                className={cn(
+                  'rounded-full px-1.5 py-0.2 text-[10px] font-bold',
+                  channelFilter === 'ALL' ? 'bg-white/20 text-white' : 'bg-surface-container-highest text-on-surface-variant',
+                )}
+              >
+                {selectedMonthRecords.length}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setChannelFilter('WALK_IN')}
+              className={cn(
+                'flex items-center gap-1.5 rounded-xl px-3 py-1.5 transition cursor-pointer',
+                channelFilter === 'WALK_IN'
+                  ? 'bg-[#0e2a4a] text-white shadow-xs'
+                  : 'bg-surface-container-low text-on-surface-variant hover:text-on-surface hover:bg-surface-container',
+              )}
+            >
+              <User className="h-3 w-3 text-[#89f5e7]" />
+              <span>Walk-In Front Desk</span>
+              <span
+                className={cn(
+                  'rounded-full px-1.5 py-0.2 text-[10px] font-bold',
+                  channelFilter === 'WALK_IN' ? 'bg-white/20 text-white' : 'bg-surface-container-highest text-on-surface-variant',
+                )}
+              >
+                {metrics.walkInCount}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setChannelFilter('ONLINE')}
+              className={cn(
+                'flex items-center gap-1.5 rounded-xl px-3 py-1.5 transition cursor-pointer',
+                channelFilter === 'ONLINE'
+                  ? 'bg-[#0e2a4a] text-white shadow-xs'
+                  : 'bg-surface-container-low text-on-surface-variant hover:text-on-surface hover:bg-surface-container',
+              )}
+            >
+              <Globe className="h-3 w-3 text-[#89f5e7]" />
+              <span>StayFlow Online Direct</span>
+              <span
+                className={cn(
+                  'rounded-full px-1.5 py-0.2 text-[10px] font-bold',
+                  channelFilter === 'ONLINE' ? 'bg-white/20 text-white' : 'bg-surface-container-highest text-on-surface-variant',
+                )}
+              >
+                {metrics.onlineCount}
+              </span>
+            </button>
+          </div>
+
+          <div className="text-label-xs text-on-surface-variant font-medium">
+            Showing <strong className="text-on-surface">{filteredRecords.length}</strong> of {selectedMonthRecords.length} Stays
+          </div>
         </div>
 
         {/* Search & Status Filter */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          <div className="relative min-w-[240px]">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="relative flex-1 max-w-md">
             <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-on-surface-variant" />
             <input
               type="text"
-              placeholder="Search guest, NRC, folio, room..."
+              placeholder="Search guest name, NRC/passport, folio ref, room..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-9.5 w-full rounded-xl border border-outline-variant/60 bg-surface-container-low pl-9 pr-3 text-body-sm text-on-surface outline-none focus:border-primary focus:bg-white"
+              className="h-9.5 w-full rounded-xl border border-outline-variant/50 bg-surface-container-low pl-9 pr-8 text-body-sm text-on-surface placeholder:text-on-surface-variant/60 outline-none transition focus:border-primary focus:bg-white"
             />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                className="absolute top-1/2 right-2.5 -translate-y-1/2 text-on-surface-variant hover:text-on-surface cursor-pointer"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
 
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="h-9.5 rounded-xl border border-outline-variant/60 bg-surface-container-low px-3 text-body-sm text-on-surface outline-none cursor-pointer"
-          >
-            <option value="ALL">All Payment Statuses</option>
-            <option value="PAID">Paid / Settled</option>
-            <option value="AWAITING_REVIEW">Awaiting Review</option>
-            <option value="PENDING">Pending (Pay at Hotel)</option>
-          </select>
+          <div className="flex items-center gap-2">
+            <span className="text-label-xs font-semibold text-on-surface-variant">Payment:</span>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="h-9.5 rounded-xl border border-outline-variant/60 bg-surface-container-low px-3 text-label-sm font-semibold text-on-surface outline-none cursor-pointer"
+            >
+              <option value="ALL">All Payment Statuses</option>
+              <option value="PAID">Paid / Cleared</option>
+              <option value="AWAITING_REVIEW">Awaiting Review</option>
+              <option value="PENDING">Pending (Pay at Hotel)</option>
+            </select>
+          </div>
         </div>
       </div>
 
       {/* Itemized Channel Table */}
-      <div className="overflow-x-auto rounded-2xl border border-outline-variant/60 bg-surface-container-lowest shadow-sm">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="border-b border-outline-variant/60 bg-surface-container-low text-label-xs font-semibold uppercase tracking-wider text-on-surface-variant">
-              <th className="px-5 py-3">Folio Ref</th>
-              <th className="px-5 py-3">Guest Name & ID</th>
-              <th className="px-5 py-3">Channel</th>
-              <th className="px-5 py-3">Room & Category</th>
-              <th className="px-5 py-3">Stay Dates</th>
-              <th className="px-5 py-3">Total (MMK)</th>
-              <th className="px-5 py-3">Payment</th>
-              <th className="px-5 py-3">Attendant / Desk</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-outline-variant/40 text-body-sm text-on-surface">
-            {filteredRecords.length === 0 ? (
-              <tr>
-                <td colSpan={8} className="px-5 py-8 text-center text-on-surface-variant">
-                  No records match your filters for {selectedMonth}.
-                </td>
+      <div className="overflow-hidden rounded-2xl border border-outline-variant/50 bg-surface-container-lowest shadow-xs">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse text-body-sm">
+            <thead>
+              <tr className="border-b border-outline-variant/40 bg-surface-container-low/50 text-[11px] font-bold uppercase tracking-wider text-on-surface-variant">
+                <th className="px-4 py-3">Folio Ref</th>
+                <th className="px-4 py-3">Guest Name & ID</th>
+                <th className="px-4 py-3">Channel</th>
+                <th className="px-4 py-3">Room & Category</th>
+                <th className="px-4 py-3">Stay Dates</th>
+                <th className="px-4 py-3 text-right">Total (MMK)</th>
+                <th className="px-4 py-3">Payment Method</th>
+                <th className="px-4 py-3">Attendant / Desk</th>
               </tr>
-            ) : (
-              filteredRecords.map((record) => {
-                const isWalkIn = record.channel === 'WALK_IN';
+            </thead>
+            <tbody className="divide-y divide-outline-variant/20">
+              {filteredRecords.map((r) => {
+                const isWalkIn = r.channel === 'WALK_IN';
                 return (
-                  <tr key={record.id} className="hover:bg-surface-container-low/50 transition">
-                    <td className="px-5 py-3.5 font-mono text-label-sm font-semibold text-primary">
-                      {record.ref}
+                  <tr key={r.id} className="transition hover:bg-surface-container-low/40">
+                    <td className="px-4 py-3.5 font-mono text-label-xs font-bold text-[#0e2a4a]">
+                      {r.ref}
                     </td>
-                    <td className="px-5 py-3.5">
-                      <p className="font-semibold text-on-surface">{record.guestName}</p>
-                      <p className="text-label-xs text-on-surface-variant">
-                        {record.nrcOrPassport || record.phone}
-                      </p>
+
+                    <td className="px-4 py-3.5">
+                      <div className="flex items-center gap-2.5">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-container text-label-xs font-bold text-on-surface">
+                          {r.guestName.charAt(0)}
+                        </span>
+                        <div>
+                          <p className="font-semibold text-on-surface">{r.guestName}</p>
+                          <p className="text-[11px] text-on-surface-variant">
+                            {r.nrcOrPassport || 'NRC on File'} • {r.phone}
+                          </p>
+                        </div>
+                      </div>
                     </td>
-                    <td className="px-5 py-3.5">
+
+                    <td className="px-4 py-3.5">
                       <span
                         className={cn(
-                          'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-label-xs font-semibold',
+                          'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-bold',
                           isWalkIn
-                            ? 'bg-[#89f5e7]/20 text-[#005a70]'
-                            : 'bg-primary/10 text-primary',
+                            ? 'bg-[#89f5e7]/20 text-secondary'
+                            : 'bg-[#0e2a4a]/10 text-[#0e2a4a]',
                         )}
                       >
-                        {isWalkIn ? <Users className="h-3 w-3" /> : <Globe className="h-3 w-3" />}
-                        {isWalkIn ? 'Walk-In' : 'Online'}
+                        {isWalkIn ? <User className="h-3 w-3" /> : <Globe className="h-3 w-3" />}
+                        {isWalkIn ? 'Walk-In Desk' : 'Online Web'}
                       </span>
                     </td>
-                    <td className="px-5 py-3.5">
-                      <p className="font-bold text-on-surface">Room {record.roomNumber}</p>
-                      <p className="text-label-xs text-on-surface-variant">{record.roomCategory}</p>
+
+                    <td className="px-4 py-3.5">
+                      <p className="font-bold text-on-surface">Room {r.roomNumber}</p>
+                      <p className="text-[11px] text-on-surface-variant">{r.roomCategory}</p>
                     </td>
-                    <td className="px-5 py-3.5">
-                      <p className="text-label-xs font-medium text-on-surface">
-                        {record.checkIn} → {record.checkOut}
+
+                    <td className="px-4 py-3.5">
+                      <p className="font-medium text-on-surface">
+                        {r.checkIn} → {r.checkOut}
                       </p>
-                      <p className="text-label-xs text-on-surface-variant">{record.nights} Nights</p>
-                    </td>
-                    <td className="px-5 py-3.5 font-bold text-on-surface">
-                      {record.totalAmount.toLocaleString()} MMK
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <p className="text-label-xs font-semibold text-on-surface">
-                        {record.paymentMethod}
+                      <p className="text-[11px] text-on-surface-variant">
+                        {r.nights} {r.nights === 1 ? 'night' : 'nights'} • {r.ratePlan}
                       </p>
+                    </td>
+
+                    <td className="px-4 py-3.5 text-right font-extrabold text-on-surface">
+                      {r.totalAmount.toLocaleString()} MMK
+                    </td>
+
+                    <td className="px-4 py-3.5">
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className={cn(
+                            'h-1.5 w-1.5 rounded-full',
+                            r.paymentStatus === 'PAID'
+                              ? 'bg-emerald-500'
+                              : 'bg-amber-500',
+                          )}
+                        />
+                        <span className="font-semibold text-on-surface text-label-xs">
+                          {r.paymentMethod}
+                        </span>
+                      </div>
                       <span
                         className={cn(
-                          'inline-block mt-0.5 rounded-sm px-1.5 py-0.2 text-[10px] font-bold uppercase',
-                          record.paymentStatus === 'PAID'
-                            ? 'bg-emerald-500/10 text-emerald-700'
-                            : record.paymentStatus === 'AWAITING_REVIEW'
-                            ? 'bg-amber-500/10 text-amber-700'
-                            : 'bg-slate-500/10 text-slate-700',
+                          'text-[10px] font-bold uppercase tracking-wider',
+                          r.paymentStatus === 'PAID' ? 'text-emerald-700' : 'text-amber-700',
                         )}
                       >
-                        {record.paymentStatus}
+                        {r.paymentStatus}
                       </span>
                     </td>
-                    <td className="px-5 py-3.5 text-label-xs text-on-surface-variant">
-                      {record.clerkOrSource}
+
+                    <td className="px-4 py-3.5 text-label-xs text-on-surface-variant">
+                      <span className="font-semibold text-on-surface">{r.clerkOrSource}</span>
                     </td>
                   </tr>
                 );
-              })
-            )}
-          </tbody>
-        </table>
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

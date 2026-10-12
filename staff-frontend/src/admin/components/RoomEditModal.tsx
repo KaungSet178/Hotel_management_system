@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { X, Save } from 'lucide-react';
+import { X, Save, Check } from 'lucide-react';
 import type { Room } from '@/types';
 import { useToast } from '@/components/toast';
+import { cn } from '@/lib/cn';
 
 interface RoomEditModalProps {
   room: Room | null;
@@ -12,17 +13,20 @@ interface RoomEditModalProps {
 }
 
 const ALL_AMENITIES = [
+  'Harbor View',
   'Ocean View',
+  'Garden Terrace',
   'Private Balcony',
   'King Bed',
   'Twin Beds',
   'Jacuzzi Tub',
   'Strand Club Access',
-  'Espresso Bar',
-  'High-speed WiFi',
+  'Espresso Machine',
+  'Free High-Speed Wi-Fi',
   'Marble Bath',
-  'Work Desk',
+  'Executive Work Desk',
   'Butler Service',
+  'Breakfast Inc.',
 ];
 
 export function RoomEditModal({ room, open, onClose, onSave }: RoomEditModalProps) {
@@ -43,6 +47,15 @@ export function RoomEditModal({ room, open, onClose, onSave }: RoomEditModalProp
     );
   };
 
+  const adjustPrice = (delta: number) => {
+    setPricePerNight((prev) => Math.max(50000, prev + delta));
+  };
+
+  // Instant Tax & Gross Calculation Preview
+  const serviceCharge = Math.round(pricePerNight * 0.1);
+  const commercialTax = Math.round(pricePerNight * 0.05);
+  const totalGuestRate = pricePerNight + serviceCharge + commercialTax;
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     onSave(room.id, {
@@ -54,43 +67,74 @@ export function RoomEditModal({ room, open, onClose, onSave }: RoomEditModalProp
       wing,
       amenities,
     });
-    toast.success(`Room ${room.number} details updated successfully.`);
+    toast.success(`Suite ${room.number} rate and inventory details updated.`);
     onClose();
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-[#0b1626]/50 backdrop-blur-xs" onClick={onClose} />
+      <div className="fixed inset-0 bg-[#071322]/60 backdrop-blur-xs transition-opacity" onClick={onClose} />
 
-      <div className="relative z-10 w-full max-w-xl overflow-hidden rounded-2xl border border-outline-variant/60 bg-surface-container-lowest shadow-2xl">
+      <div className="relative z-10 w-full max-w-xl overflow-hidden rounded-2xl border border-outline-variant/60 bg-surface-container-lowest shadow-2xl animate-[drawer-in_0.15s_ease-out]">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-outline-variant/50 px-6 py-4">
+        <div className="flex items-center justify-between border-b border-outline-variant/40 bg-surface-container-low/40 px-6 py-4">
           <div>
-            <h3 className="text-title-lg font-semibold text-on-surface">
-              Edit Room {room.number}
-            </h3>
-            <p className="text-body-sm text-on-surface-variant">
-              Floor {room.floor} • Current status: <strong>{room.status}</strong>
+            <div className="flex items-center gap-2">
+              <h3 className="text-xl font-bold tracking-tight text-on-surface">
+                Configure Suite {room.number}
+              </h3>
+              <span className="rounded-full bg-[#0e2a4a]/10 px-2.5 py-0.5 text-label-xs font-bold text-[#0e2a4a]">
+                Floor {room.floor}
+              </span>
+            </div>
+            <p className="mt-0.5 text-body-xs text-on-surface-variant">
+              Dynamic pricing yield configuration & room rack specifications
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full p-1.5 text-on-surface-variant hover:bg-surface-container hover:text-on-surface"
+            className="rounded-full p-1.5 text-on-surface-variant hover:bg-surface-container hover:text-on-surface cursor-pointer"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="max-h-[75vh] overflow-y-auto p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="max-h-[75vh] overflow-y-auto p-6 space-y-5">
           {/* Rate Adjustment Card */}
-          <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
-            <label className="block text-label-md font-semibold text-primary">
-              Base Price Per Night (MMK)
-            </label>
-            <div className="relative mt-2">
-              <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-body-sm font-bold text-primary">
+          <div className="rounded-2xl border border-[#0e2a4a]/20 bg-gradient-to-br from-[#0e2a4a]/5 via-surface-container-low to-surface-container-lowest p-4">
+            <div className="flex items-center justify-between">
+              <label className="text-label-sm font-bold text-[#0e2a4a] uppercase tracking-wide">
+                Base Nightly Room Rate
+              </label>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => adjustPrice(-10000)}
+                  className="rounded-lg border border-outline-variant/60 bg-white px-2 py-0.5 text-[11px] font-bold text-on-surface hover:bg-surface-container transition cursor-pointer"
+                >
+                  -10k
+                </button>
+                <button
+                  type="button"
+                  onClick={() => adjustPrice(10000)}
+                  className="rounded-lg border border-outline-variant/60 bg-white px-2 py-0.5 text-[11px] font-bold text-on-surface hover:bg-surface-container transition cursor-pointer"
+                >
+                  +10k
+                </button>
+                <button
+                  type="button"
+                  onClick={() => adjustPrice(25000)}
+                  className="rounded-lg border border-outline-variant/60 bg-white px-2 py-0.5 text-[11px] font-bold text-on-surface hover:bg-surface-container transition cursor-pointer"
+                >
+                  +25k
+                </button>
+              </div>
+            </div>
+
+            <div className="relative mt-2.5">
+              <span className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-body-sm font-extrabold text-[#0e2a4a]">
                 MMK
               </span>
               <input
@@ -100,30 +144,43 @@ export function RoomEditModal({ room, open, onClose, onSave }: RoomEditModalProp
                 required
                 value={pricePerNight}
                 onChange={(e) => setPricePerNight(Number(e.target.value))}
-                className="h-11 w-full rounded-xl border border-outline-variant/80 bg-white pl-14 pr-4 text-headline-sm font-bold text-on-surface outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                className="h-12 w-full rounded-xl border border-outline-variant/80 bg-white pl-16 pr-4 text-2xl font-black text-on-surface outline-none focus:border-[#0e2a4a] focus:ring-2 focus:ring-[#0e2a4a]/10"
               />
             </div>
-            <p className="mt-1 text-label-xs text-on-surface-variant">
-              Applies to all upcoming walk-in direct desk inquiries and standard web bookings.
-            </p>
+
+            {/* Live Pricing Breakdown Preview */}
+            <div className="mt-3.5 rounded-xl border border-outline-variant/30 bg-surface-container-low/70 p-3 text-body-xs">
+              <div className="flex items-center justify-between font-medium text-on-surface-variant">
+                <span>10% Service Charge:</span>
+                <span className="font-semibold text-on-surface">{serviceCharge.toLocaleString()} MMK</span>
+              </div>
+              <div className="flex items-center justify-between font-medium text-on-surface-variant mt-1">
+                <span>5% Commercial Tax (IRD):</span>
+                <span className="font-semibold text-on-surface">{commercialTax.toLocaleString()} MMK</span>
+              </div>
+              <div className="flex items-center justify-between font-bold text-on-surface border-t border-outline-variant/30 pt-1.5 mt-1.5">
+                <span>Estimated Guest Folio Gross:</span>
+                <span className="text-label-md font-black text-[#0e2a4a]">{totalGuestRate.toLocaleString()} MMK / night</span>
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="block text-label-sm font-medium text-on-surface">
-                Room Category
+              <label className="block text-label-xs font-bold text-on-surface-variant uppercase">
+                Suite Category
               </label>
               <input
                 type="text"
                 required
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="mt-1 h-10 w-full rounded-xl border border-outline-variant/70 bg-surface-container-low px-3 text-body-md text-on-surface outline-none focus:border-primary focus:bg-white"
+                className="mt-1 h-10 w-full rounded-xl border border-outline-variant/60 bg-surface-container-low px-3 text-body-sm font-semibold text-on-surface outline-none focus:border-[#0e2a4a] focus:bg-white"
               />
             </div>
 
             <div>
-              <label className="block text-label-sm font-medium text-on-surface">
+              <label className="block text-label-xs font-bold text-on-surface-variant uppercase">
                 Bed Configuration
               </label>
               <input
@@ -131,13 +188,13 @@ export function RoomEditModal({ room, open, onClose, onSave }: RoomEditModalProp
                 required
                 value={beds}
                 onChange={(e) => setBeds(e.target.value)}
-                className="mt-1 h-10 w-full rounded-xl border border-outline-variant/70 bg-surface-container-low px-3 text-body-md text-on-surface outline-none focus:border-primary focus:bg-white"
+                className="mt-1 h-10 w-full rounded-xl border border-outline-variant/60 bg-surface-container-low px-3 text-body-sm font-semibold text-on-surface outline-none focus:border-[#0e2a4a] focus:bg-white"
               />
             </div>
 
             <div>
-              <label className="block text-label-sm font-medium text-on-surface">
-                Max Guest Capacity
+              <label className="block text-label-xs font-bold text-on-surface-variant uppercase">
+                Max Capacity
               </label>
               <input
                 type="number"
@@ -146,12 +203,12 @@ export function RoomEditModal({ room, open, onClose, onSave }: RoomEditModalProp
                 required
                 value={maxGuests}
                 onChange={(e) => setMaxGuests(Number(e.target.value))}
-                className="mt-1 h-10 w-full rounded-xl border border-outline-variant/70 bg-surface-container-low px-3 text-body-md text-on-surface outline-none focus:border-primary focus:bg-white"
+                className="mt-1 h-10 w-full rounded-xl border border-outline-variant/60 bg-surface-container-low px-3 text-body-sm font-semibold text-on-surface outline-none focus:border-[#0e2a4a] focus:bg-white"
               />
             </div>
 
             <div>
-              <label className="block text-label-sm font-medium text-on-surface">
+              <label className="block text-label-xs font-bold text-on-surface-variant uppercase">
                 Floor Space (m²)
               </label>
               <input
@@ -160,30 +217,30 @@ export function RoomEditModal({ room, open, onClose, onSave }: RoomEditModalProp
                 required
                 value={size}
                 onChange={(e) => setSize(Number(e.target.value))}
-                className="mt-1 h-10 w-full rounded-xl border border-outline-variant/70 bg-surface-container-low px-3 text-body-md text-on-surface outline-none focus:border-primary focus:bg-white"
+                className="mt-1 h-10 w-full rounded-xl border border-outline-variant/60 bg-surface-container-low px-3 text-body-sm font-semibold text-on-surface outline-none focus:border-[#0e2a4a] focus:bg-white"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-label-sm font-medium text-on-surface">
-              Wing / Building Location
+            <label className="block text-label-xs font-bold text-on-surface-variant uppercase">
+              Resort Wing / Building Location
             </label>
             <input
               type="text"
               required
               value={wing}
               onChange={(e) => setWing(e.target.value)}
-              className="mt-1 h-10 w-full rounded-xl border border-outline-variant/70 bg-surface-container-low px-3 text-body-md text-on-surface outline-none focus:border-primary focus:bg-white"
+              className="mt-1 h-10 w-full rounded-xl border border-outline-variant/60 bg-surface-container-low px-3 text-body-sm font-semibold text-on-surface outline-none focus:border-[#0e2a4a] focus:bg-white"
             />
           </div>
 
           {/* Amenities Multi-Select */}
           <div>
-            <label className="block text-label-sm font-medium text-on-surface mb-2">
-              Features & Amenities
+            <label className="block text-label-xs font-bold text-on-surface-variant uppercase mb-2">
+              Signature Amenities & Features
             </label>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {ALL_AMENITIES.map((item) => {
                 const active = amenities.includes(item);
                 return (
@@ -191,12 +248,14 @@ export function RoomEditModal({ room, open, onClose, onSave }: RoomEditModalProp
                     key={item}
                     type="button"
                     onClick={() => toggleAmenity(item)}
-                    className={`rounded-full px-3 py-1 text-label-sm transition ${
+                    className={cn(
+                      'flex items-center gap-1.5 rounded-full px-3 py-1 text-label-xs font-semibold transition cursor-pointer',
                       active
-                        ? 'bg-secondary-container text-on-secondary-container font-medium'
-                        : 'border border-outline-variant/60 bg-surface-container-low text-on-surface-variant hover:bg-surface-container'
-                    }`}
+                        ? 'bg-[#0e2a4a] text-white shadow-xs'
+                        : 'border border-outline-variant/60 bg-surface-container-low text-on-surface-variant hover:bg-surface-container hover:text-on-surface',
+                    )}
                   >
+                    {active && <Check className="h-3 w-3 text-[#89f5e7]" />}
                     {item}
                   </button>
                 );
@@ -205,20 +264,20 @@ export function RoomEditModal({ room, open, onClose, onSave }: RoomEditModalProp
           </div>
 
           {/* Footer Actions */}
-          <div className="flex items-center justify-end gap-3 border-t border-outline-variant/50 pt-4">
+          <div className="flex items-center justify-end gap-3 border-t border-outline-variant/40 pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl px-4 py-2 text-label-md font-medium text-on-surface-variant hover:bg-surface-container"
+              className="rounded-xl px-4 py-2 text-label-sm font-semibold text-on-surface-variant hover:bg-surface-container transition cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-label-md font-medium text-white shadow-sm hover:brightness-110 active:scale-[0.99]"
+              className="flex items-center gap-2 rounded-xl bg-[#0e2a4a] px-5 py-2.5 text-label-sm font-semibold text-white shadow-xs hover:bg-[#18395f] active:scale-[0.99] transition cursor-pointer"
             >
-              <Save className="h-4 w-4" />
-              Save Changes
+              <Save className="h-4 w-4 text-[#89f5e7]" />
+              Save Rate & Specs
             </button>
           </div>
         </form>

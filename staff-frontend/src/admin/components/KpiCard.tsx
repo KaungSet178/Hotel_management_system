@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
 interface KpiCardProps {
@@ -10,6 +11,11 @@ interface KpiCardProps {
     positive: boolean;
     text: string;
   };
+  progress?: {
+    current: number;
+    target: number;
+    label?: string;
+  };
   icon: LucideIcon;
   variant?: 'primary' | 'secondary' | 'accent' | 'neutral';
 }
@@ -20,62 +26,101 @@ export function KpiCard({
   unit,
   subtext,
   trend,
+  progress,
   icon: Icon,
   variant = 'neutral',
 }: KpiCardProps) {
-  const variantStyles = {
-    neutral: 'bg-surface-container-lowest border-outline-variant/60 text-on-surface',
-    primary: 'bg-primary-container/10 border-primary-container/30 text-on-surface',
-    secondary: 'bg-secondary-container/30 border-secondary-container/60 text-on-surface',
-    accent: 'bg-[#89f5e7]/10 border-[#89f5e7]/30 text-on-surface',
+  const iconThemes = {
+    neutral: 'bg-surface-container text-[#0e2a4a]',
+    primary: 'bg-[#0e2a4a] text-white',
+    secondary: 'bg-secondary-container text-on-secondary-container',
+    accent: 'bg-[#89f5e7] text-[#071322]',
   };
 
-  const iconStyles = {
-    neutral: 'bg-surface-container text-on-surface-variant',
-    primary: 'bg-primary text-white',
-    secondary: 'bg-secondary-container text-on-secondary-container',
-    accent: 'bg-[#89f5e7] text-[#0b1626]',
+  const borderAccents = {
+    neutral: 'border-l-4 border-l-slate-400',
+    primary: 'border-l-4 border-l-[#0e2a4a]',
+    secondary: 'border-l-4 border-l-secondary',
+    accent: 'border-l-4 border-l-[#89f5e7]',
   };
 
   return (
     <div
       className={cn(
-        'group relative flex flex-col justify-between rounded-2xl border p-5 shadow-sm transition hover:shadow-md hover:-translate-y-0.5',
-        variantStyles[variant],
+        'group relative flex flex-col justify-between rounded-2xl border border-outline-variant/50 bg-surface-container-lowest p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-outline-variant',
+        borderAccents[variant],
       )}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-label-md font-medium text-on-surface-variant">{title}</p>
-          <div className="mt-2 flex items-baseline gap-1.5">
-            <span className="text-headline-md font-bold tracking-tight text-on-surface">
-              {value}
-            </span>
-            {unit && <span className="text-body-sm font-medium text-on-surface-variant">{unit}</span>}
-          </div>
+      <div>
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-label-sm font-semibold tracking-wide text-on-surface-variant uppercase">
+            {title}
+          </p>
+          <span
+            className={cn(
+              'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-xs transition-transform duration-200 group-hover:scale-105',
+              iconThemes[variant],
+            )}
+          >
+            <Icon className="h-5 w-5" />
+          </span>
         </div>
-        <span
-          className={cn(
-            'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl shadow-xs transition group-hover:scale-105',
-            iconStyles[variant],
+
+        <div className="mt-3 flex items-baseline gap-2">
+          <span className="text-3xl font-extrabold tracking-tight text-on-surface">
+            {value}
+          </span>
+          {unit && (
+            <span className="text-label-sm font-medium text-on-surface-variant">
+              {unit}
+            </span>
           )}
-        >
-          <Icon className="h-5 w-5" />
-        </span>
+        </div>
       </div>
 
-      {(subtext || trend) && (
-        <div className="mt-4 flex items-center justify-between gap-2 border-t border-outline-variant/30 pt-3 text-body-xs">
-          {subtext && <span className="text-on-surface-variant">{subtext}</span>}
+      {progress && (
+        <div className="mt-4">
+          <div className="flex justify-between text-[11px] font-medium text-on-surface-variant">
+            <span>{progress.label || 'Progress vs Target'}</span>
+            <span className="font-bold text-on-surface">
+              {Math.min(100, Math.round((progress.current / progress.target) * 100))}%
+            </span>
+          </div>
+          <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-surface-container">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-primary to-secondary transition-all duration-500"
+              style={{
+                width: `${Math.min(
+                  100,
+                  Math.round((progress.current / progress.target) * 100),
+                )}%`,
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {(subtext || trend) && !progress && (
+        <div className="mt-4 flex items-center justify-between gap-2 border-t border-outline-variant/30 pt-3 text-[11px] leading-snug">
+          {subtext && (
+            <span className="text-on-surface-variant font-medium">
+              {subtext}
+            </span>
+          )}
           {trend && (
             <span
               className={cn(
-                'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-label-xs font-semibold',
+                'inline-flex shrink-0 items-center gap-0.5 rounded-full px-2 py-0.5 text-label-xs font-bold whitespace-nowrap',
                 trend.positive
-                  ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
-                  : 'bg-rose-500/10 text-rose-700 dark:text-rose-400',
+                  ? 'bg-emerald-500/10 text-emerald-700'
+                  : 'bg-rose-500/10 text-rose-700',
               )}
             >
+              {trend.positive ? (
+                <ArrowUpRight className="h-3 w-3" />
+              ) : (
+                <ArrowDownRight className="h-3 w-3" />
+              )}
               {trend.text}
             </span>
           )}
