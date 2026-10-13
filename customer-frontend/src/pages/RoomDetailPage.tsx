@@ -14,6 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import { Container } from '@/components/ui/section';
+import { Reveal } from '@/components/ui/reveal';
 import { Badge } from '@/components/ui/badge';
 import { Rating } from '@/components/ui/rating';
 import { Card } from '@/components/ui/card';
@@ -148,52 +149,60 @@ export function RoomDetailPage() {
           </section>
 
           <div className="mt-8 grid gap-4 sm:grid-cols-3">
-            {highlights.map((highlight) => (
-              <Card key={highlight.title} className="p-5">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
-                  <highlight.icon className="h-5 w-5" aria-hidden="true" />
-                </span>
-                <h3 className="mt-3 text-sm font-semibold text-ink">{highlight.title}</h3>
-                <p className="mt-1 text-xs text-ink-soft">{highlight.body}</p>
-              </Card>
+            {highlights.map((highlight, index) => (
+              <Reveal key={highlight.title} delay={index * 90} className="h-full">
+                <Card className="group h-full p-5 transition-transform duration-300 hover:-translate-y-1 hover:shadow-pop">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-700 transition-transform duration-300 group-hover:scale-110">
+                    <highlight.icon className="h-5 w-5" aria-hidden="true" />
+                  </span>
+                  <h3 className="mt-3 text-sm font-semibold text-ink">{highlight.title}</h3>
+                  <p className="mt-1 text-xs text-ink-soft">{highlight.body}</p>
+                </Card>
+              </Reveal>
             ))}
           </div>
 
           <section className="mt-8">
             <h2 className="text-lg font-semibold text-ink">Included amenities &amp; services</h2>
             <ul className="mt-4 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-              {room.amenities.map((amenity) => (
-                <li key={amenity} className="flex items-center gap-2 text-sm text-ink-soft">
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-50 text-brand-600">
-                    <Check className="h-3 w-3" aria-hidden="true" />
+              {room.amenities.map((amenity, index) => (
+                <Reveal as="li" key={amenity} delay={Math.min(index, 8) * 40}>
+                  <span className="flex items-center gap-2 text-sm text-ink-soft">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-50 text-brand-600">
+                      <Check className="h-3 w-3" aria-hidden="true" />
+                    </span>
+                    {amenity}
                   </span>
-                  {amenity}
-                </li>
+                </Reveal>
               ))}
             </ul>
           </section>
 
           <div className="mt-8 grid gap-4 sm:grid-cols-2">
-            <Card className="p-5">
-              <h3 className="inline-flex items-center gap-2 text-sm font-semibold text-ink">
-                <Clock className="h-4 w-4 text-brand-600" aria-hidden="true" /> Check-in &amp; check-out
-              </h3>
-              <ul className="mt-2 space-y-1 text-sm text-ink-soft">
-                <li>Standard check-in: {hotel.checkInTime}</li>
-                <li>Standard check-out: {hotel.checkOutTime}</li>
-                <li>Contactless mobile key &amp; QR express check-in enabled</li>
-              </ul>
-            </Card>
-            <Card className="p-5">
-              <h3 className="inline-flex items-center gap-2 text-sm font-semibold text-ink">
-                <ShieldCheck className="h-4 w-4 text-brand-600" aria-hidden="true" /> Cancellation policy
-              </h3>
-              <ul className="mt-2 space-y-1 text-sm text-ink-soft">
-                <li>Free cancellation until 48 hours before check-in</li>
-                <li>100% refundable on flexible rates prior to arrival window</li>
-                <li>Non-refundable saver rate available at a 15% discount</li>
-              </ul>
-            </Card>
+            <Reveal className="h-full">
+              <Card className="h-full p-5">
+                <h3 className="inline-flex items-center gap-2 text-sm font-semibold text-ink">
+                  <Clock className="h-4 w-4 text-brand-600" aria-hidden="true" /> Check-in &amp; check-out
+                </h3>
+                <ul className="mt-2 space-y-1 text-sm text-ink-soft">
+                  <li>Standard check-in: {hotel.checkInTime}</li>
+                  <li>Standard check-out: {hotel.checkOutTime}</li>
+                  <li>Contactless mobile key &amp; QR express check-in enabled</li>
+                </ul>
+              </Card>
+            </Reveal>
+            <Reveal delay={90} className="h-full">
+              <Card className="h-full p-5">
+                <h3 className="inline-flex items-center gap-2 text-sm font-semibold text-ink">
+                  <ShieldCheck className="h-4 w-4 text-brand-600" aria-hidden="true" /> Cancellation policy
+                </h3>
+                <ul className="mt-2 space-y-1 text-sm text-ink-soft">
+                  <li>Free cancellation until 48 hours before check-in</li>
+                  <li>100% refundable on flexible rates prior to arrival window</li>
+                  <li>Non-refundable saver rate available at a 15% discount</li>
+                </ul>
+              </Card>
+            </Reveal>
           </div>
         </div>
 

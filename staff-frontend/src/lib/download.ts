@@ -15,6 +15,16 @@ export function downloadText(
   URL.revokeObjectURL(url);
 }
 
+/** Save an image (URL or data URI) to disk. */
+export function downloadImage(filename: string, href: string): void {
+  const anchor = document.createElement('a');
+  anchor.href = href;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+}
+
 function csvEscape(value: string | number): string {
   const s = String(value);
   if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;

@@ -30,6 +30,10 @@ interface BellItem {
   title: string;
   desc: string;
   time: string;
+  /** Staff route the notification belongs to. */
+  to: string;
+  /** Admin route equivalent (fallback: `to`). */
+  adminTo?: string;
 }
 
 function Brand() {
@@ -226,9 +230,11 @@ function SidebarContent({
 
 function NotificationsPanel({
   items,
+  onOpen,
   onClear,
 }: {
   items: BellItem[];
+  onOpen: (item: BellItem) => void;
   onClear: () => void;
 }) {
   return (
@@ -250,17 +256,24 @@ function NotificationsPanel({
       ) : (
         <ul className="divide-y divide-outline-variant/40">
           {items.map((item) => (
-            <li key={item.title} className="flex items-start gap-3 px-4 py-3">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-container">
-                <item.Icon className="h-4 w-4 text-on-surface-variant" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-label-md font-medium text-on-surface">{item.title}</p>
-                <p className="truncate text-body-sm text-on-surface-variant">{item.desc}</p>
-              </div>
-              <span className="rounded-full bg-surface-container px-2 py-0.5 text-label-sm text-on-surface-variant">
-                {item.time}
-              </span>
+            <li key={item.title}>
+              <button
+                type="button"
+                onClick={() => onOpen(item)}
+                className="flex w-full cursor-pointer items-start gap-3 px-4 py-3 text-left transition hover:bg-surface-container-low focus-visible:bg-surface-container-low focus-visible:outline-none"
+              >
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-container">
+                  <item.Icon className="h-4 w-4 text-on-surface-variant" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-label-md font-medium text-on-surface">{item.title}</p>
+                  <p className="truncate text-body-sm text-on-surface-variant">{item.desc}</p>
+                </div>
+                <span className="rounded-full bg-surface-container px-2 py-0.5 text-label-sm text-on-surface-variant">
+                  {item.time}
+                </span>
+                <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-on-surface-variant/60" />
+              </button>
             </li>
           ))}
         </ul>
@@ -287,20 +300,34 @@ export function Shell() {
       title: 'Deposit proof awaiting verification',
       desc: 'SF-2025-9510 · Thant Zin Oo · 759,000 MMK',
       time: 'now',
+      to: '/requests',
+      adminTo: '/admin/finances',
     },
     {
       Icon: Wrench,
       title: 'Room 308 — urgent maintenance',
       desc: 'AC thermostat calibration reported 12m ago',
       time: '12m',
+      to: '/availability',
+      adminTo: '/admin/rooms',
     },
     {
       Icon: CheckCheck,
       title: 'KBZPay settlement reconciled',
       desc: '4 of 5 transactions matched automatically',
       time: '2h',
+      to: '/checkout',
+      adminTo: '/admin/finances',
     },
   ]);
+
+  const openNotification = (item: BellItem): void => {
+    const target = isAdminView && item.adminTo ? item.adminTo : item.to;
+    setNotifications((prev) => prev.filter((n) => n !== item));
+    setNotifOpen(false);
+    navigate(target);
+  };
+
 
   const submitSearch = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
@@ -374,7 +401,9 @@ export function Shell() {
               aria-label="Notifications"
             >
               <Bell className="h-5 w-5" />
-              <span className="absolute top-1.5 right-2 h-2 w-2 rounded-full bg-error ring-2 ring-white" />
+              {notifications.length > 0 && (
+                <span className="absolute top-1.5 right-2 h-2 w-2 rounded-full bg-error ring-2 ring-white" />
+              )}
             </button>
             {notifOpen && (
               <>
@@ -382,6 +411,7 @@ export function Shell() {
                 <div className="absolute right-0 z-50 mt-2 w-80 max-w-[calc(100vw-2rem)]">
                   <NotificationsPanel
                     items={notifications}
+                    onOpen={openNotification}
                     onClear={() => {
                       setNotifications([]);
                       setNotifOpen(false);

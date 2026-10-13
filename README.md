@@ -33,6 +33,10 @@ hotel_management_system/
 │   ├── README.md             # Customer web app documentation & architecture
 │   ├── vitest.config.ts      # 38 automated frontend tests
 │   └── package.json          # Frontend dependencies & scripts
+├── staff-frontend/           # StayFlow staff and admin portal (React + Vite)
+│   ├── src/                  # Front-desk operations, authentication and admin screens
+│   ├── .env.example          # Supabase configuration template
+│   └── package.json          # Staff portal dependencies and scripts
 ├── .gitignore                # Git ignore configuration
 ├── package.json              # Monorepo task runner
 ├── PROJECT_ROADMAP_AND_STATUS.md # Master project status & remaining implementation roadmap
@@ -69,6 +73,20 @@ cp backend/.env.example backend/.env
 
 ### 3. Running from Root Monorepo
 From the repository root, you can control both backend and frontend applications:
+
+### Staff & Admin Portal Setup
+```bash
+# Navigate to the staff portal
+cd staff-frontend
+
+# Install dependencies and start the app
+npm install
+npm run dev
+```
+
+Configure `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in `staff-frontend/.env`
+using the template in `staff-frontend/.env.example`. The portal includes front-desk
+reservations, check-in/out, guest services, and role-based admin screens.
 
 ```bash
 # Start the Express Backend API (http://localhost:3000)

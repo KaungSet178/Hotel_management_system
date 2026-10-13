@@ -31,15 +31,16 @@ const ALL_AMENITIES = [
 
 export function RoomEditModal({ room, open, onClose, onSave }: RoomEditModalProps) {
   const toast = useToast();
-  if (!open || !room) return null;
 
-  const [pricePerNight, setPricePerNight] = useState(room.pricePerNight);
-  const [category, setCategory] = useState(room.category);
-  const [beds, setBeds] = useState(room.beds);
-  const [maxGuests, setMaxGuests] = useState(room.maxGuests);
-  const [size, setSize] = useState(room.size);
-  const [wing, setWing] = useState(room.wing);
-  const [amenities, setAmenities] = useState<string[]>(room.amenities || []);
+  const [pricePerNight, setPricePerNight] = useState(room?.pricePerNight ?? 0);
+  const [category, setCategory] = useState(room?.category ?? '');
+  const [beds, setBeds] = useState(room?.beds ?? '');
+  const [maxGuests, setMaxGuests] = useState(room?.maxGuests ?? 1);
+  const [size, setSize] = useState(room?.size ?? 0);
+  const [wing, setWing] = useState(room?.wing ?? '');
+  const [amenities, setAmenities] = useState<string[]>(room?.amenities || []);
+
+  if (!open || !room) return null;
 
   const toggleAmenity = (item: string) => {
     setAmenities((prev) =>

@@ -19,13 +19,15 @@ export function MaintenanceModal({
   onToggle,
 }: MaintenanceModalProps) {
   const toast = useToast();
+
+  const [workOrderReason, setWorkOrderReason] = useState(
+    room?.workOrder || 'Central Air Conditioning thermostat recalibration and filter replacement',
+  );
+  const [priority, setPriority] = useState<'URGENT' | 'ROUTINE'>('ROUTINE');
+
   if (!open || !room) return null;
 
   const isMaintenance = room.status === 'MAINTENANCE';
-  const [workOrderReason, setWorkOrderReason] = useState(
-    room.workOrder || 'Central Air Conditioning thermostat recalibration and filter replacement',
-  );
-  const [priority, setPriority] = useState<'URGENT' | 'ROUTINE'>('ROUTINE');
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();

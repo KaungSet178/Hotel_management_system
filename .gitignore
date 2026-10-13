@@ -43,3 +43,6 @@ Thumbs.db
 .idea/
 .system_generated/
 scratch/
+
+# StayFlow dev-only shared payment-proof store (see shared/vite-payment-proofs.mjs)
+.stayflow/

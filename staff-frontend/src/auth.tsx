@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import type { StaffUser, UserRole } from '@/types';
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseUrl } from '@/lib/supabase';
 
 export const DEMO_PRESETS = [
   {
@@ -28,6 +28,7 @@ interface AuthContextType {
   role: UserRole | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isOffline: boolean;
   login: (email: string, password?: string) => Promise<StaffUser>;
   logout: () => Promise<void>;
 }
@@ -35,6 +36,56 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const AUTH_STORAGE_KEY = 'stayflow.staff.active_profile';
+
+type DemoPreset = (typeof DEMO_PRESETS)[number];
+
+function messageOf(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (err && typeof err === 'object' && 'message' in err) {
+    return String((err as { message: unknown }).message);
+  }
+  return typeof err === 'string' ? err : '';
+}
+
+function isNetworkError(err: unknown): boolean {
+  const msg = messageOf(err).toLowerCase();
+  return (
+    msg.includes('failed to fetch') ||
+    msg.includes('network') ||
+    msg.includes('timeout') ||
+    msg.includes('timed out') ||
+    msg.includes('abort') ||
+    msg.includes('offline')
+  );
+}
+
+function buildDemoUser(preset: DemoPreset): StaffUser {
+  const local = preset.email.split('@')[0] || 'staff';
+  const name = local.charAt(0).toUpperCase() + local.slice(1);
+  return {
+    id: `demo-${preset.role.toLowerCase()}`,
+    name,
+    email: preset.email,
+    role: preset.role,
+    title: preset.title,
+    station: preset.station,
+    avatarText: name.charAt(0).toUpperCase(),
+  };
+}
+
+async function isSupabaseReachable(): Promise<boolean> {
+  if (!supabase || !supabaseUrl) return false;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 3000);
+  try {
+    await fetch(`${supabaseUrl}/auth/v1/health`, { method: 'GET', signal: controller.signal });
+    return true;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<StaffUser | null>(() => {
@@ -49,6 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return null;
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [isOffline, setIsOffline] = useState(false);
 
   // Helper to resolve staff user from Supabase auth session
   const resolveStaffUser = async (authUserId: string, authEmail: string): Promise<StaffUser | null> => {
@@ -110,6 +162,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     async function initSession() {
       if (!supabase) {
+        setIsOffline(true);
+        setIsLoading(false);
+        return;
+      }
+
+      const reachable = await isSupabaseReachable();
+      if (!reachable) {
+        setIsOffline(true);
         setIsLoading(false);
         return;
       }
@@ -176,32 +236,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password = 'Password123!'): Promise<StaffUser> => {
     const cleanEmail = email.trim().toLowerCase();
+    const preset = DEMO_PRESETS.find((p) => p.email.toLowerCase() === cleanEmail);
 
-    if (!supabase) {
-      throw new Error('Supabase client is not configured.');
+    const signInOffline = (): StaffUser => {
+      if (!preset || password !== preset.password) {
+        throw new Error(
+          'Offline demo mode: sign in with admin@hotel.com or reception@hotel.com using password "Password123!".',
+        );
+      }
+      const staffUser = buildDemoUser(preset);
+      setUser(staffUser);
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(staffUser));
+      return staffUser;
+    };
+
+    if (!supabase || isOffline) {
+      return signInOffline();
     }
 
-    // 1. Authenticate with Supabase Auth
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: cleanEmail,
-      password,
-    });
+    try {
+      // 1. Authenticate with Supabase Auth
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password,
+      });
 
-    if (error || !data.user) {
-      throw new Error(error?.message || 'Invalid email or password.');
+      if (error || !data.user) {
+        if (isNetworkError(error)) {
+          setIsOffline(true);
+          return signInOffline();
+        }
+        throw new Error(error?.message || 'Invalid email or password.');
+      }
+
+      // 2. Fetch profile from public.profiles and verify staff role
+      const staff = await resolveStaffUser(data.user.id, data.user.email || cleanEmail);
+
+      if (!staff) {
+        await supabase.auth.signOut();
+        throw new Error(
+          'Access Denied: No staff profile found for this account. Accounts must be provisioned by the administrator in Supabase.',
+        );
+      }
+
+      setUser(staff);
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(staff));
+      return staff;
+    } catch (err) {
+      if (isNetworkError(err)) {
+        setIsOffline(true);
+        return signInOffline();
+      }
+      throw err;
     }
-
-    // 2. Fetch profile from public.profiles and verify staff role
-    const staff = await resolveStaffUser(data.user.id, data.user.email || cleanEmail);
-
-    if (!staff) {
-      await supabase.auth.signOut();
-      throw new Error('Access Denied: No staff profile found for this account. Accounts must be provisioned by the administrator in Supabase.');
-    }
-
-    setUser(staff);
-    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(staff));
-    return staff;
   };
 
   const logout = async () => {
@@ -223,6 +310,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role: user?.role ?? null,
         isAuthenticated: !!user,
         isLoading,
+        isOffline,
         login,
         logout,
       }}

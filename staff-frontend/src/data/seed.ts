@@ -1,10 +1,12 @@
 import type {
   Booking,
   BookingRequest,
+  CheckoutEntry,
   Folio,
   Room,
   ServiceRequest,
 } from '@/types';
+import { addDays, todayIso } from '@/lib/format';
 
 export const LOCALE = {
   property: 'Yangon Heritage',
@@ -224,37 +226,37 @@ export const initialServiceRequests: ServiceRequest[] = [
     id: 'SR-1054', room: '308', category: 'Maintenance',
     title: 'AC Thermostat Calibration', guest: 'U Kyaw Zayar',
     ago: '12m ago', quote: 'Master bedroom unit freezing at 18°C, unable to adjust upward from the wall panel.',
-    urgency: 'URGENT', state: 'PENDING',
+    charge: 0, urgency: 'URGENT', state: 'PENDING',
   },
   {
     id: 'SR-1053', room: '512', category: 'In-Room Pantry',
     title: 'Sparkling Water & Ice Bucket', guest: 'Elena Rostova',
     ago: '7m ago', quote: 'San Pellegrino 750ml x 2 bottles, fresh bucket of ice, and 2 crystal glasses.',
-    state: 'PENDING',
+    charge: 25000, state: 'PENDING',
   },
   {
     id: 'SR-1049', room: '402', category: 'Housekeeping',
     title: 'Extra Towels & Linens', guest: 'Thant Zin Oo',
     ago: '12 mins ago', quote: 'Please provide 2 additional bath towels and 1 set of extra bathroom botanical amenities.',
-    assignee: 'Daw May Thu · En route Floor 4', state: 'IN_PROGRESS',
+    charge: 0, assignee: 'Daw May Thu · En route Floor 4', state: 'IN_PROGRESS',
   },
   {
     id: 'SR-1048', room: '106', category: 'Concierge',
     title: 'Universal Power Adapter (UK)', guest: 'Michael Chang',
     ago: '18 mins ago', quote: 'Requested standard 3-pin UK laptop plug adapter from Concierge stock.',
-    assignee: 'Ko Kyaw', state: 'IN_PROGRESS',
+    charge: 0, assignee: 'Ko Kyaw', state: 'IN_PROGRESS',
   },
   {
     id: 'SR-1041', room: '118', category: 'Bell Captain',
     title: 'Luggage Assistance / Downstairs', guest: 'Sophie Martin',
     ago: '25 mins ago', quote: '3 hard-shell bags for 11:30 airport transfer. Cart staged at elevator.',
-    assignee: 'Porter Desk', state: 'IN_PROGRESS',
+    charge: 5000, assignee: 'Porter Desk', state: 'IN_PROGRESS',
   },
   {
     id: 'SR-1010', room: '501', category: 'Housekeeping',
     title: 'Welcome Fruit Platter Replenish', guest: 'Penthouse Loft',
     ago: 'Handled at 09:22', quote: 'Fresh seasonal rambutan and dragonfruit platter delivered with chef welcome note.',
-    assignee: 'Handled by Ma Hnin', state: 'COMPLETED',
+    charge: 35000, assignee: 'Handled by Ma Hnin', state: 'COMPLETED',
   },
 ];
 
@@ -283,3 +285,48 @@ export const initialWalkIn: WalkInRecord = {
   guestName: 'Aung San Lin',
   room: 'Room 306',
 };
+
+/**
+ * Rooms currently in-house, each with a folio ready for check-out settlement.
+ * Room 402 keeps the hand-authored `initialFolio`; the rest are derived from the
+ * room rate and a matching in-house booking.
+ */
+const CHECKOUT_REFS: Record<string, string> = {
+  '402': '#SF-9481',
+  '208': '#SF-9470',
+  '118': '#SF-9465',
+  '308': '#SF-9455',
+  '512': '#SF-9440',
+  '501': '#SF-9479',
+};
+
+export function buildCheckoutEntries(): CheckoutEntry[] {
+  return initialRooms
+    .filter((room) => room.status === 'OCCUPIED')
+    .map((room): CheckoutEntry => {
+      const bookingRef = CHECKOUT_REFS[room.number] ?? `#SF-94${room.number}`;
+      if (room.number === '402') {
+        return { roomId: room.id, bookingRef, folio: initialFolio, settled: false };
+      }
+      const booking = initialBookings.find(
+        (b) => b.status === 'CHECKED_IN' && b.room === `Room ${room.number}`,
+      );
+      const nights = booking?.nights ?? 2;
+      const roomCharges = room.pricePerNight * nights;
+      const incidentals = Math.round(roomCharges * 0.12);
+      const taxes = Math.round((roomCharges + incidentals) * 0.05);
+      const folio: Folio = {
+        guestName: room.guestName ?? 'In-house guest',
+        room: `Room ${room.number}`,
+        roomCategory: room.category,
+        checkIn: booking?.checkIn ?? addDays(todayIso(), -nights),
+        checkOut: booking?.checkOut ?? todayIso(),
+        nights,
+        roomCharges,
+        roomChargesPaid: true,
+        incidentals,
+        taxes,
+      };
+      return { roomId: room.id, bookingRef, folio, settled: false };
+    });
+}

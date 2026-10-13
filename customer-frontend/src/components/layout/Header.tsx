@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { BedDouble, Menu, Phone, X } from 'lucide-react';
 import { Container } from '@/components/ui/section';
@@ -16,7 +16,15 @@ const NAV = [
 export function Header() {
   const [open, setOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     cn(
@@ -25,10 +33,15 @@ export function Header() {
     );
 
   return (
-    <header className="sticky top-0 z-50 border-b border-brand-900/8 bg-white/85 backdrop-blur">
+    <header
+      className={cn(
+        'sticky top-0 z-50 border-b border-brand-900/8 backdrop-blur transition-[box-shadow,background-color] duration-300',
+        scrolled ? 'bg-white/95 shadow-card' : 'bg-white/85 shadow-none',
+      )}
+    >
       <Container className="flex h-16 items-center justify-between gap-4">
-        <Link to="/" className="flex items-center gap-2" aria-label="StayFlow home">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-700 text-white">
+        <Link to="/" className="group flex items-center gap-2" aria-label="StayFlow home">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-700 text-white transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-105">
             <BedDouble className="h-5 w-5" aria-hidden="true" />
           </span>
           <span className="text-lg font-semibold tracking-tight text-ink">StayFlow</span>
@@ -73,7 +86,7 @@ export function Header() {
       </Container>
 
       {open ? (
-        <div className="border-t border-brand-900/8 bg-white lg:hidden">
+        <div className="animate-menu-in border-t border-brand-900/8 bg-white lg:hidden">
           <Container className="flex flex-col gap-1 py-3">
             {NAV.map((item) => (
               <NavLink

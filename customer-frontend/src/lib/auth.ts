@@ -609,7 +609,9 @@ export function signOut(): void {
   if (typeof window !== 'undefined') {
     try {
       window.localStorage.removeItem(TOKEN_KEY);
-    } catch {}
+    } catch {
+      /* ignore storage errors (private mode / quota) */
+    }
   }
   write(null);
 }

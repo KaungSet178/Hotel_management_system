@@ -1,8 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import { fetchPaymentProofs, normalizeBookingRef } from '@/lib/paymentProofs';
+import type { PaymentProofRecord } from '@/lib/paymentProofs';
 import type {
   Booking,
   BookingRequest,
+  CheckoutEntry,
   Folio,
   RequestState,
   Room,
@@ -14,6 +17,7 @@ import {
   todayIso,
 } from '@/lib/format';
 import {
+  buildCheckoutEntries,
   initialBookings,
   initialFolio,
   initialRequests,
@@ -25,6 +29,39 @@ import {
 import { staffApi } from '@/services/staffApi';
 import { useAuth } from '@/auth';
 
+const PROOF_POLL_MS = 4000;
+
+function proofToBookingRequest(proof: PaymentProofRecord): BookingRequest {
+  const shortRef = normalizeBookingRef(proof.bookingRef);
+  const uploaded = proof.uploadedAt ? new Date(proof.uploadedAt) : new Date();
+  const minutes = Math.max(0, Math.round((Date.now() - uploaded.getTime()) / 60_000));
+  const ago =
+    minutes < 1 ? 'Just now' : minutes < 60 ? `${minutes}m ago` : `${Math.round(minutes / 60)}h ago`;
+  return {
+    ref: `#${shortRef}`,
+    shortRef,
+    guestName: proof.guestName ?? 'Guest',
+    phone: proof.phone ?? '—',
+    room: proof.room ?? 'Unassigned',
+    roomCategory: proof.roomCategory ?? undefined,
+    stay: proof.stay ?? 'To be confirmed',
+    nights: proof.nights ?? 0,
+    amount: proof.amount ?? 0,
+    channel: 'Online · Guest App',
+    state: 'PROOF_UPLOADED',
+    ago,
+    note: 'Payment screenshot uploaded from the guest app and awaiting verification.',
+    slip: {
+      txnRef: proof.txnRef ?? `UPL-${shortRef}`,
+      amount: proof.amount ?? 0,
+      payer: proof.payer ?? proof.guestName ?? 'Guest',
+      recipient: 'StayFlow Hospitality Co., Ltd',
+      timestamp: uploaded.toLocaleString(),
+      image: proof.dataUrl,
+    },
+  };
+}
+
 interface AppStore {
   bookings: Booking[];
   requests: BookingRequest[];
@@ -32,6 +69,8 @@ interface AppStore {
   rooms: Room[];
   folio: Folio;
   folioSettled: boolean;
+  checkoutQueue: CheckoutEntry[];
+  activeRoomId: string;
   walkIn: WalkInRecord;
   loading: boolean;
   refresh: () => Promise<void>;
@@ -42,6 +81,8 @@ interface AppStore {
   addWalkInBooking: (guestName: string, roomNumber?: string) => boolean;
   updateServiceState: (id: string, state: ServiceState) => void;
   addServiceRequest: (input: Omit<ServiceRequest, 'id' | 'state' | 'ago'>) => void;
+  selectCheckoutRoom: (roomId: string) => void;
+  removeCheckoutEntry: (roomId: string) => void;
   settleFolio: () => void;
 }
 
@@ -53,8 +94,8 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   const [requests, setRequests] = useState<BookingRequest[]>(initialRequests);
   const [serviceRequests, setServiceRequests] = useState<ServiceRequest[]>(initialServiceRequests);
   const [rooms, setRooms] = useState<Room[]>(initialRooms);
-  const [folio] = useState<Folio>(initialFolio);
-  const [folioSettled, setFolioSettled] = useState(false);
+  const [baseQueue, setBaseQueue] = useState<CheckoutEntry[]>(buildCheckoutEntries);
+  const [selectedRoomId, setSelectedRoomId] = useState('');
   const [walkIn, setWalkIn] = useState<WalkInRecord>(initialWalkIn);
   const [folioCounter, setFolioCounter] = useState(9502);
   const [loading, setLoading] = useState(true);
@@ -104,6 +145,63 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       unsubscribe();
     };
   }, [refresh]);
+
+  // Pull payment screenshots the guest app shared and surface any that are not
+  // already in the queue as new PROOF_UPLOADED requests (matched by reference).
+  useEffect(() => {
+    let active = true;
+    const sync = async () => {
+      try {
+        const proofs = await fetchPaymentProofs();
+        if (!active || proofs.length === 0) return;
+        setRequests((prev) => {
+          const known = new Set(prev.map((r) => normalizeBookingRef(r.shortRef)));
+          const additions = proofs
+            .filter((proof) => !known.has(normalizeBookingRef(proof.bookingRef)))
+            .map(proofToBookingRequest);
+          return additions.length ? [...additions, ...prev] : prev;
+        });
+      } catch {
+        // Desk keeps its local queue when the shared store is unreachable.
+      }
+    };
+    void sync();
+    const timer = window.setInterval(sync, PROOF_POLL_MS);
+    const onFocus = () => void sync();
+    window.addEventListener('focus', onFocus);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, []);
+
+  const serviceChargeByRoom = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const service of serviceRequests) {
+      map[service.room] = (map[service.room] ?? 0) + (service.charge ?? 0);
+    }
+    return map;
+  }, [serviceRequests]);
+
+  const checkoutQueue = useMemo(
+    () =>
+      baseQueue.map((entry) => {
+        const roomNumber = entry.folio.room.replace(/[^0-9]/g, '');
+        const extra = serviceChargeByRoom[roomNumber] ?? 0;
+        return extra > 0
+          ? { ...entry, folio: { ...entry.folio, incidentals: entry.folio.incidentals + extra } }
+          : entry;
+      }),
+    [baseQueue, serviceChargeByRoom],
+  );
+
+  const activeEntry =
+    checkoutQueue.find((entry) => entry.roomId === selectedRoomId) ?? checkoutQueue[0];
+  const activeRoomId = activeEntry?.roomId ?? '';
+  const folio = activeEntry?.folio ?? initialFolio;
+  const folioSettled = activeEntry?.settled ?? false;
+
 
   const confirmRequest = useCallback(
     (ref: string) => {
@@ -269,16 +367,32 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     }).catch((err) => console.error('addServiceRequest error:', err));
   }, []);
 
+  const selectCheckoutRoom = useCallback((roomId: string) => {
+    setSelectedRoomId(roomId);
+  }, []);
+
+  const removeCheckoutEntry = useCallback((roomId: string) => {
+    setBaseQueue((prev) => prev.filter((entry) => entry.roomId !== roomId));
+    setSelectedRoomId((prev) => (prev === roomId ? '' : prev));
+  }, []);
+
   const settleFolio = useCallback(() => {
-    setFolioSettled(true);
-    // Find room 304 and set to CLEANING turnover
-    const room304 = rooms.find((r) => r.number === '304');
-    if (room304) {
-      staffApi.updateRoomStatus(room304.id, 'CLEANING').then(() => {
+    setBaseQueue((prev) =>
+      prev.map((entry) =>
+        entry.roomId === activeRoomId ? { ...entry, settled: true } : entry,
+      ),
+    );
+    // Find room and set to CLEANING turnover
+    const entry = baseQueue.find((e) => e.roomId === activeRoomId);
+    const roomNum = entry?.folio.room.match(/\d+/)?.[0] || '304';
+    const roomTarget = rooms.find((r) => r.number === roomNum);
+    if (roomTarget) {
+      staffApi.updateRoomStatus(roomTarget.id, 'CLEANING').then(() => {
         staffApi.fetchRooms().then(setRooms);
       }).catch((err) => console.warn('settleFolio updateRoomStatus error:', err));
     }
-  }, [rooms]);
+  }, [activeRoomId, baseQueue, rooms]);
+
 
   const value = useMemo<AppStore>(
     () => ({
@@ -288,6 +402,8 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       rooms,
       folio,
       folioSettled,
+      checkoutQueue,
+      activeRoomId,
       walkIn,
       loading,
       refresh,
@@ -298,6 +414,8 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       addWalkInBooking,
       updateServiceState,
       addServiceRequest,
+      selectCheckoutRoom,
+      removeCheckoutEntry,
       settleFolio,
     }),
     [
@@ -307,6 +425,8 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       rooms,
       folio,
       folioSettled,
+      checkoutQueue,
+      activeRoomId,
       walkIn,
       loading,
       refresh,
@@ -317,6 +437,8 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       addWalkInBooking,
       updateServiceState,
       addServiceRequest,
+      selectCheckoutRoom,
+      removeCheckoutEntry,
       settleFolio,
     ],
   );

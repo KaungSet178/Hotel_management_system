@@ -14,6 +14,7 @@ import {
   Users,
 } from 'lucide-react';
 import { Container, SectionHeading } from '@/components/ui/section';
+import { Reveal } from '@/components/ui/reveal';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonStyles } from '@/components/ui/button';
@@ -173,12 +174,13 @@ function BookingsView({ user }: { user: UserProfile }) {
               />
             ) : (
               <div className="space-y-4">
-                {grouped[segment].map((booking) => (
-                  <BookingRow
-                    key={booking.reference}
-                    booking={booking}
-                    onCancel={() => setCancelTarget(booking)}
-                  />
+                {grouped[segment].map((booking, index) => (
+                  <Reveal key={booking.reference} delay={Math.min(index, 6) * 60}>
+                    <BookingRow
+                      booking={booking}
+                      onCancel={() => setCancelTarget(booking)}
+                    />
+                  </Reveal>
                 ))}
               </div>
             )}
@@ -186,7 +188,7 @@ function BookingsView({ user }: { user: UserProfile }) {
         </div>
 
         <aside className="lg:sticky lg:top-24 lg:h-fit">
-          <Card className="p-5">
+    <Card className="p-5 transition-transform duration-300 hover:-translate-y-0.5 hover:shadow-pop">
             <h2 className="inline-flex items-center gap-2 text-sm font-semibold text-ink">
               <KeyRound className="h-4 w-4 text-brand-600" aria-hidden="true" /> Open a reservation
             </h2>

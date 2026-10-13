@@ -17,3 +17,5 @@ export {
   serviceStatusLabel,
 } from './status';
 export { Container, SectionHeading } from './section';
+export { Reveal } from './reveal';
+export type { RevealProps } from './reveal';

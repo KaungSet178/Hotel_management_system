@@ -14,6 +14,8 @@ function ScrollToTop() {
 }
 
 export function Layout() {
+  const { pathname } = useLocation();
+
   return (
     <div className="flex min-h-screen flex-col">
       <ScrollToTop />
@@ -24,7 +26,9 @@ export function Layout() {
       ) : null}
       <Header />
       <main className="flex-1">
-        <Outlet />
+        <div key={pathname} className="animate-page-in">
+          <Outlet />
+        </div>
       </main>
       <Footer />
       <SignInDialog />

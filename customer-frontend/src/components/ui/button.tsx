@@ -6,14 +6,14 @@ export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'dan
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
 const base =
-  'inline-flex items-center justify-center gap-2 rounded-full font-medium transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-55 focus-visible:outline-2 focus-visible:outline-offset-2';
+  'inline-flex items-center justify-center gap-2 rounded-full font-medium transition-[color,background-color,border-color,box-shadow,transform] duration-200 will-change-transform active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-55 disabled:active:scale-100 focus-visible:outline-2 focus-visible:outline-offset-2';
 
 const variants: Record<ButtonVariant, string> = {
-  primary: 'bg-brand-700 text-white hover:bg-brand-800 active:bg-brand-900 shadow-sm',
+  primary: 'bg-brand-700 text-white hover:bg-brand-800 hover:shadow-md active:bg-brand-900 shadow-sm',
   secondary: 'bg-lavender-200 text-brand-900 hover:bg-lavender-300',
   outline: 'border border-brand-700/30 bg-white text-brand-800 hover:border-brand-700 hover:bg-brand-50',
   ghost: 'text-brand-800 hover:bg-brand-50',
-  danger: 'bg-rose-600 text-white hover:bg-rose-700',
+  danger: 'bg-rose-600 text-white hover:bg-rose-700 hover:shadow-md',
   link: 'text-brand-700 underline-offset-4 hover:underline p-0 h-auto',
 };
 

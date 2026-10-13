@@ -79,6 +79,8 @@ export interface PaymentSlip {
   recipient: string;
   timestamp: string;
   receiptUrl?: string;
+  /** The slip image the guest uploaded (URL or data URI) from the booking app. */
+  image?: string;
   fileName?: string;
 }
 
@@ -92,6 +94,7 @@ export interface ServiceRequest {
   guest: string;
   ago: string;
   quote: string;
+  charge: number;
   urgency?: 'URGENT' | 'NORMAL';
   assignee?: string;
   state: ServiceState;
@@ -113,6 +116,13 @@ export interface Folio {
 export interface CheckInOutcome {
   expiringCount: number;
   arrivedCount: number;
+}
+
+export interface CheckoutEntry {
+  roomId: string;
+  bookingRef: string;
+  folio: Folio;
+  settled: boolean;
 }
 
 export type UserRole = 'ADMIN' | 'RECEPTIONIST' | 'HOUSEKEEPING';
