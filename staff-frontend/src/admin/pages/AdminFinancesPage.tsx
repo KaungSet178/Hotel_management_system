@@ -16,22 +16,103 @@ import { KpiCard } from '../components/KpiCard';
 import { downloadCsv } from '@/lib/download';
 import { useToast } from '@/components/toast';
 
+type GatewayKey =
+  | 'Visa / Mastercard / Stripe'
+  | 'KBZPay Merchant QR'
+  | 'WavePay Mobile Money'
+  | 'Front Desk Cash Drawer';
+
+interface GatewayInfo {
+  name: GatewayKey;
+  badge: string;
+  pillClass: string;
+}
+
+function getPaymentGatewayInfo(rawMethod?: string): GatewayInfo {
+  const m = String(rawMethod || '').toUpperCase().trim();
+  if (m.includes('KBZ')) {
+    return {
+      name: 'KBZPay Merchant QR',
+      badge: 'KBZPay QR',
+      pillClass: 'bg-blue-500/10 text-blue-700 border-blue-200/80',
+    };
+  }
+  if (m.includes('WAVE')) {
+    return {
+      name: 'WavePay Mobile Money',
+      badge: 'WavePay QR',
+      pillClass: 'bg-amber-500/10 text-amber-700 border-amber-200/80',
+    };
+  }
+  if (
+    m.includes('PAY_AT_HOTEL') ||
+    m.includes('CASH') ||
+    m.includes('HOTEL') ||
+    m.includes('COUNTER') ||
+    m.includes('DESK')
+  ) {
+    return {
+      name: 'Front Desk Cash Drawer',
+      badge: 'Cash Drawer',
+      pillClass: 'bg-emerald-500/10 text-emerald-700 border-emerald-200/80',
+    };
+  }
+  return {
+    name: 'Visa / Mastercard / Stripe',
+    badge: 'Card / Stripe',
+    pillClass: 'bg-[#0e2a4a]/10 text-[#0e2a4a] border-[#0e2a4a]/20',
+  };
+}
+
+function getStatusBadge(status?: string, bookingStatus?: string) {
+  const s = String(status || '').toUpperCase();
+  const bs = String(bookingStatus || '').toUpperCase();
+
+  if (s === 'PAID' || bs === 'CHECKED_OUT' || s === 'COMPLETED') {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-bold text-emerald-700 border border-emerald-200">
+        <CheckCircle2 className="h-3 w-3" /> Paid & Cleared
+      </span>
+    );
+  }
+  if (bs === 'CHECKED_IN' || s === 'IN_HOUSE') {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-sky-500/10 px-2 py-0.5 text-[11px] font-bold text-sky-700 border border-sky-200">
+        In-House Stay
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-700 border border-slate-200">
+      {status || 'Active'}
+    </span>
+  );
+}
+
 export function AdminFinancesPage() {
   const toast = useToast();
   const {
     selectedMonth,
     setSelectedMonth,
     selectedMonthRecords,
-    metrics,
   } = useAdminStore();
+
+  // Active non-cancelled ledger records for selected month
+  const activeRecords = useMemo(() => {
+    return selectedMonthRecords.filter(
+      (r) => r.bookingStatus !== 'CANCELLED' && r.paymentStatus !== 'CANCELLED_24H_HOLD'
+    );
+  }, [selectedMonthRecords]);
 
   // Itemized financial ledger rows
   const ledgerRows = useMemo(() => {
-    return selectedMonthRecords.map((r) => {
+    return activeRecords.map((r) => {
       // Net base calculation: gross = base * 1.15
       const baseRoom = Math.round(r.totalAmount / 1.15);
       const service10 = Math.round(baseRoom * 0.1);
-      const tax5 = Math.round(baseRoom * 0.05);
+      // Guarantee row balance: base + service + tax === gross
+      const tax5 = r.totalAmount - baseRoom - service10;
+      const gwInfo = getPaymentGatewayInfo(r.paymentMethod);
 
       return {
         id: r.id,
@@ -43,15 +124,31 @@ export function AdminFinancesPage() {
         base: baseRoom,
         service: service10,
         tax: tax5,
-        gateway: r.paymentMethod,
+        gateway: gwInfo.badge,
+        gatewayName: gwInfo.name,
+        gatewayPillClass: gwInfo.pillClass,
+        rawPaymentMethod: r.paymentMethod,
         status: r.paymentStatus,
+        bookingStatus: r.bookingStatus,
       };
     });
-  }, [selectedMonthRecords]);
+  }, [activeRecords]);
 
-  // Payment method totals
+  // Totals computed directly from ledger rows: guaranteed 100% mathematical reconciliation
+  const totals = useMemo(() => {
+    const gross = ledgerRows.reduce((acc, r) => acc + r.gross, 0);
+    const base = ledgerRows.reduce((acc, r) => acc + r.base, 0);
+    const service = ledgerRows.reduce((acc, r) => acc + r.service, 0);
+    const tax = ledgerRows.reduce((acc, r) => acc + r.tax, 0);
+    return { gross, base, service, tax };
+  }, [ledgerRows]);
+
+  // Payment method totals across all 4 gateways
   const paymentGateways = useMemo(() => {
-    const map: Record<string, { count: number; total: number; icon: typeof CreditCard; color: string; dot: string }> = {
+    const map: Record<
+      GatewayKey,
+      { count: number; total: number; icon: typeof CreditCard; color: string; dot: string }
+    > = {
       'Visa / Mastercard / Stripe': {
         count: 0,
         total: 0,
@@ -82,22 +179,21 @@ export function AdminFinancesPage() {
       },
     };
 
-    selectedMonthRecords.forEach((r) => {
-      let key = 'Visa / Mastercard / Stripe';
-      if (r.paymentMethod.includes('KBZPay')) key = 'KBZPay Merchant QR';
-      else if (r.paymentMethod.includes('WavePay')) key = 'WavePay Mobile Money';
-      else if (r.paymentMethod.includes('Cash')) key = 'Front Desk Cash Drawer';
-
-      map[key].count += 1;
-      map[key].total += r.totalAmount;
+    ledgerRows.forEach((r) => {
+      const gwName = r.gatewayName;
+      if (map[gwName]) {
+        map[gwName].count += 1;
+        map[gwName].total += r.gross;
+      }
     });
 
-    return Object.entries(map).map(([name, data]) => ({
+    const grossTotal = totals.gross;
+    return (Object.entries(map) as [GatewayKey, (typeof map)[GatewayKey]][]).map(([name, data]) => ({
       name,
       ...data,
-      pct: metrics.mtdRevenue > 0 ? Math.round((data.total / metrics.mtdRevenue) * 100) : 0,
+      pct: grossTotal > 0 ? Math.round((data.total / grossTotal) * 100) : 0,
     }));
-  }, [selectedMonthRecords, metrics.mtdRevenue]);
+  }, [ledgerRows, totals.gross]);
 
   const handleExportLedger = () => {
     const headers = [
@@ -153,11 +249,11 @@ export function AdminFinancesPage() {
         }
       />
 
-      {/* Tax & Financial KPI Cards */}
+      {/* Tax & Financial KPI Cards - 100% reconciled with ledger */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
           title="Gross Collections (MTD)"
-          value={metrics.mtdRevenue.toLocaleString()}
+          value={totals.gross.toLocaleString()}
           unit="MMK"
           subtext="Includes room revenue & taxes"
           icon={DollarSign}
@@ -165,7 +261,7 @@ export function AdminFinancesPage() {
         />
         <KpiCard
           title="Net Base Room Revenue"
-          value={metrics.netRoomRevenue.toLocaleString()}
+          value={totals.base.toLocaleString()}
           unit="MMK"
           subtext="Base hospitality room charges"
           icon={Receipt}
@@ -173,7 +269,7 @@ export function AdminFinancesPage() {
         />
         <KpiCard
           title="10% Service Charge Pool"
-          value={metrics.serviceCharge10.toLocaleString()}
+          value={totals.service.toLocaleString()}
           unit="MMK"
           subtext="Distributed to operational staff pool"
           icon={Percent}
@@ -181,7 +277,7 @@ export function AdminFinancesPage() {
         />
         <KpiCard
           title="5% Commercial Tax (IRD)"
-          value={metrics.commercialTax5.toLocaleString()}
+          value={totals.tax.toLocaleString()}
           unit="MMK"
           subtext="Myanmar Gov statutory accrual"
           icon={Building2}
@@ -200,7 +296,7 @@ export function AdminFinancesPage() {
               Reconciled merchant settlements by digital payment gateway and front desk cash collection
             </p>
           </div>
-          <span className="flex items-center gap-1 text-label-xs font-bold text-emerald-700 bg-emerald-500/10 px-2.5 py-1 rounded-full">
+          <span className="flex items-center gap-1 text-label-xs font-bold text-emerald-700 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-200">
             <CheckCircle2 className="h-3.5 w-3.5" /> 100% Reconciled
           </span>
         </div>
@@ -234,7 +330,7 @@ export function AdminFinancesPage() {
                   <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-container">
                     <div
                       className="h-full rounded-full bg-[#0e2a4a]"
-                      style={{ width: `${gw.pct}%` }}
+                      style={{ width: `${Math.min(100, gw.pct)}%` }}
                     />
                   </div>
                   <p className="mt-2 text-[11px] font-medium text-on-surface-variant">
@@ -258,7 +354,7 @@ export function AdminFinancesPage() {
               Every stay breakdown: Net Base (85%) + 10% Service Charge + 5% Commercial Tax
             </p>
           </div>
-          <span className="rounded-full bg-white px-3 py-1 text-label-xs font-bold text-[#0e2a4a] shadow-xs">
+          <span className="rounded-full bg-white px-3 py-1 text-label-xs font-bold text-[#0e2a4a] border border-outline-variant/30 shadow-xs">
             {ledgerRows.length} Ledger Entries
           </span>
         </div>
@@ -274,39 +370,55 @@ export function AdminFinancesPage() {
                 <th className="px-4 py-3 text-right">10% Service</th>
                 <th className="px-4 py-3 text-right">5% Comm. Tax</th>
                 <th className="px-4 py-3 text-right">Gross Total</th>
-                <th className="px-4 py-3">Gateway</th>
+                <th className="px-4 py-3 text-center">Gateway</th>
+                <th className="px-4 py-3 text-center">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant/20 text-on-surface">
-              {ledgerRows.map((row) => (
-                <tr key={row.id} className="hover:bg-surface-container-low/40 transition">
-                  <td className="px-4 py-3.5 font-mono text-label-xs font-bold text-[#0e2a4a]">
-                    {row.ref}
-                  </td>
-                  <td className="px-4 py-3.5 text-label-xs text-on-surface-variant">{row.date}</td>
-                  <td className="px-4 py-3.5">
-                    <p className="font-semibold text-on-surface">{row.guest}</p>
-                    <span className="text-[11px] text-on-surface-variant">
-                      {row.channel === 'WALK_IN' ? 'Walk-In Desk' : 'Online StayFlow'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3.5 text-right font-medium text-on-surface">
-                    {row.base.toLocaleString()}
-                  </td>
-                  <td className="px-4 py-3.5 text-right font-medium text-[#00677f]">
-                    {row.service.toLocaleString()}
-                  </td>
-                  <td className="px-4 py-3.5 text-right font-medium text-rose-600">
-                    {row.tax.toLocaleString()}
-                  </td>
-                  <td className="px-4 py-3.5 text-right font-black text-on-surface">
-                    {row.gross.toLocaleString()} MMK
-                  </td>
-                  <td className="px-4 py-3.5 text-label-xs font-semibold text-on-surface-variant">
-                    {row.gateway}
+              {ledgerRows.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="px-4 py-8 text-center text-on-surface-variant">
+                    No ledger entries found for {selectedMonth}.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                ledgerRows.map((row) => (
+                  <tr key={row.id} className="hover:bg-surface-container-low/40 transition">
+                    <td className="px-4 py-3.5 font-mono text-label-xs font-bold text-[#0e2a4a]">
+                      {row.ref}
+                    </td>
+                    <td className="px-4 py-3.5 text-label-xs text-on-surface-variant">{row.date}</td>
+                    <td className="px-4 py-3.5">
+                      <p className="font-semibold text-on-surface">{row.guest}</p>
+                      <span className="text-[11px] text-on-surface-variant">
+                        {row.channel === 'WALK_IN' ? 'Walk-In Desk' : 'Online StayFlow'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3.5 text-right font-medium text-on-surface">
+                      {row.base.toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3.5 text-right font-medium text-[#00677f]">
+                      {row.service.toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3.5 text-right font-medium text-rose-600">
+                      {row.tax.toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3.5 text-right font-black text-on-surface">
+                      {row.gross.toLocaleString()} MMK
+                    </td>
+                    <td className="px-4 py-3.5 text-center">
+                      <span
+                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-label-xs font-bold border ${row.gatewayPillClass}`}
+                      >
+                        {row.gateway}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3.5 text-center">
+                      {getStatusBadge(row.status, row.bookingStatus)}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
             <tfoot>
               <tr className="border-t-2 border-outline-variant/60 bg-surface-container-low/70 font-bold text-on-surface">
@@ -314,17 +426,18 @@ export function AdminFinancesPage() {
                   Totals ({selectedMonth})
                 </td>
                 <td className="px-4 py-4 text-right text-label-md font-extrabold text-on-surface">
-                  {metrics.netRoomRevenue.toLocaleString()}
+                  {totals.base.toLocaleString()}
                 </td>
                 <td className="px-4 py-4 text-right text-label-md font-extrabold text-[#00677f]">
-                  {metrics.serviceCharge10.toLocaleString()}
+                  {totals.service.toLocaleString()}
                 </td>
                 <td className="px-4 py-4 text-right text-label-md font-extrabold text-rose-600">
-                  {metrics.commercialTax5.toLocaleString()}
+                  {totals.tax.toLocaleString()}
                 </td>
                 <td className="px-4 py-4 text-right text-label-md font-black text-[#0e2a4a]">
-                  {metrics.mtdRevenue.toLocaleString()} MMK
+                  {totals.gross.toLocaleString()} MMK
                 </td>
+                <td className="px-4 py-4" />
                 <td className="px-4 py-4" />
               </tr>
             </tfoot>

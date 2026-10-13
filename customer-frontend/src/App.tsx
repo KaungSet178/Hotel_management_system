@@ -1,6 +1,7 @@
 import { Route, Routes } from 'react-router-dom';
 import { AuthProvider } from '@/context/AuthContext';
 import { BookingProvider } from '@/context/BookingContext';
+import { CustomerNotificationProvider } from '@/context/NotificationContext';
 import { Layout } from '@/components/layout/Layout';
 import { AppErrorBoundary } from '@/components/layout/AppErrorBoundary';
 import { HomePage } from '@/pages/HomePage';
@@ -23,7 +24,8 @@ export function App() {
     <AppErrorBoundary>
       <AuthProvider>
         <BookingProvider>
-          <Routes>
+          <CustomerNotificationProvider>
+            <Routes>
             <Route element={<Layout />}>
               <Route index element={<HomePage />} />
               <Route path="search" element={<SearchResultsPage />} />
@@ -41,6 +43,7 @@ export function App() {
               <Route path="*" element={<NotFoundPage />} />
             </Route>
           </Routes>
+          </CustomerNotificationProvider>
         </BookingProvider>
       </AuthProvider>
     </AppErrorBoundary>

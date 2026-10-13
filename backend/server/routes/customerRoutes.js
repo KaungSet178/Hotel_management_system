@@ -93,13 +93,13 @@ function buildRatePlans(nightlyRate, isWellnessEligible = false) {
       nightlyRate: flexible,
       features: [
         'Free cancellation until 48h before check-in',
-        'Pay at hotel or prepaid online',
+        'Prepaid online with verified confirmation',
         'Daily gourmet buffet breakfast',
         'Complimentary ultra-speed Wi-Fi 6',
         'Instant confirmation'
       ],
       refundable: true,
-      payAtHotel: true,
+      payAtHotel: false,
       recommended: true,
       promoNote: 'Free cancellation until 48h prior'
     },
@@ -345,7 +345,14 @@ function mapBookingToFrontend(b, roomListing) {
     status: frontendStatus,
     paymentMethod: b.payment_method || 'KBZPAY',
     paymentStatus: frontendPaymentStatus,
-    paymentProof: b.payment_proof || undefined,
+    paymentProof: b.payment_proof
+      ? {
+          ...b.payment_proof,
+          dataUrl: b.payment_proof.dataUrl || b.payment_proof.receiptUrl || b.payment_proof.base64DataUrl || undefined,
+          receiptUrl: b.payment_proof.receiptUrl || b.payment_proof.dataUrl || b.payment_proof.base64DataUrl || undefined,
+          image: b.payment_proof.image || b.payment_proof.dataUrl || b.payment_proof.receiptUrl || undefined,
+        }
+      : undefined,
     transactionId: b.transaction_id || undefined,
     roomNumber: b.room_number || undefined,
     cancelRefundAmount: b.cancel_refund_amount ? Number(b.cancel_refund_amount) : undefined,
@@ -764,6 +771,17 @@ router.post('/bookings', optionalAuth, async (req, res, next) => {
     const pin = generatePin();
     const qrToken = createSecureQrToken(crypto.randomUUID(), reference);
 
+    // Normalize payment proof to ensure all image URI and metadata aliases exist
+    const normalizedPaymentProof = paymentProof ? {
+      ...paymentProof,
+      dataUrl: paymentProof.dataUrl || paymentProof.receiptUrl || paymentProof.base64DataUrl || null,
+      receiptUrl: paymentProof.receiptUrl || paymentProof.dataUrl || paymentProof.base64DataUrl || null,
+      image: paymentProof.image || paymentProof.dataUrl || paymentProof.receiptUrl || null,
+      fileName: paymentProof.fileName || 'payment-slip.jpg',
+      mimeType: paymentProof.mimeType || 'image/jpeg',
+      uploadedAt: paymentProof.uploadedAt || new Date().toISOString()
+    } : null;
+
     // Atomic Booking Execution
     const atomicResult = await createAtomicBooking({
       room_id: roomRow.id,
@@ -789,7 +807,7 @@ router.post('/bookings', optionalAuth, async (req, res, next) => {
       price_breakdown: priceBreakdown,
       guest_preferences: guest.preferences || {},
       special_notes: guest.conNotes || '',
-      payment_proof: paymentProof || null
+      payment_proof: normalizedPaymentProof
     });
 
     // Construct full response object
@@ -811,7 +829,7 @@ router.post('/bookings', optionalAuth, async (req, res, next) => {
       status: 'pending',
       paymentMethod,
       paymentStatus: (paymentStatus || 'awaiting_review').toLowerCase(),
-      paymentProof: paymentProof || undefined,
+      paymentProof: normalizedPaymentProof || undefined,
       transactionId: transactionId || undefined,
       roomNumber: roomRow.room_number,
       createdAt: new Date().toISOString()
@@ -939,7 +957,8 @@ router.post('/reservations/:reference/cancel', optionalAuth, async (req, res) =>
     }
 
     if (isConfigured) {
-      await require('../supabaseClient').supabase
+      const client = require('../supabaseClient').supabase;
+      await client
         .from('bookings')
         .update({
           booking_status: 'CANCELLED',
@@ -947,6 +966,16 @@ router.post('/reservations/:reference/cancel', optionalAuth, async (req, res) =>
           cancel_refund_amount: refundAmount
         })
         .eq('id', booking.id);
+
+      if (booking.room_id) {
+        await client
+          .from('rooms')
+          .update({
+            status: 'AVAILABLE',
+            updated_at: cancelledAt
+          })
+          .eq('id', booking.room_id);
+      }
     }
 
     booking.booking_status = 'CANCELLED';
@@ -971,26 +1000,72 @@ router.get('/reservations/:reference/service-requests', async (req, res) => {
     let requests = [];
 
     if (isConfigured) {
-      const { data } = await require('../supabaseClient').supabase
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(reference);
+      const orFilter = isUuid
+        ? `id.eq.${reference},booking_reference.eq.${reference},folio_id.eq.${reference}`
+        : `booking_reference.eq.${reference},folio_id.eq.${reference}`;
+
+      const { data: booking } = await require('../supabaseClient').supabase
+        .from('bookings')
+        .select('id, booking_reference, folio_id, guest_name')
+        .or(orFilter)
+        .maybeSingle();
+
+      let query = require('../supabaseClient').supabase
         .from('room_service_requests')
-        .select('*')
-        .eq('reservation_reference', reference)
-        .order('created_at', { ascending: false });
+        .select('*');
+
+      if (booking) {
+        query = query.or(`reservation_reference.eq.${reference},reservation_reference.eq.${booking.booking_reference},booking_id.eq.${booking.id}`);
+      } else {
+        query = query.eq('reservation_reference', reference);
+      }
+
+      const { data } = await query.order('created_at', { ascending: false });
       if (data) requests = data;
     }
 
-    res.json(requests.map(r => ({
-      id: r.id,
-      reservationReference: reference,
-      category: (r.category || 'other').toLowerCase(),
-      categoryLabel: r.category_label || r.category,
-      details: r.description || r.details || '',
-      deliveryTime: r.delivery_time || 'Immediate',
-      status: (r.status || 'pending').toLowerCase(),
-      createdAt: r.created_at,
-      updatedAt: r.updated_at || r.created_at,
-      staffName: r.assigned_to ? 'Staff Assigned' : undefined
-    })));
+    if (requests.length === 0) {
+      const { memoryStore } = require('../supabaseClient');
+      if (memoryStore && Array.isArray(memoryStore.serviceRequests)) {
+        requests = memoryStore.serviceRequests.filter(r =>
+          (r.reservation_reference && r.reservation_reference.toLowerCase() === reference.toLowerCase()) ||
+          (r.booking_id && r.booking_id === reference)
+        );
+      }
+    }
+
+    // Resolve assigned staff names from profiles
+    const assignedIds = [...new Set(requests.map(r => r.assigned_to).filter(Boolean))];
+    const staffNames = {};
+    if (isConfigured && assignedIds.length > 0) {
+      const { data: profiles } = await require('../supabaseClient').supabase
+        .from('profiles')
+        .select('id, full_name, email, role')
+        .in('id', assignedIds);
+      (profiles || []).forEach(p => {
+        staffNames[p.id] = p.full_name || p.email;
+      });
+    }
+
+    res.json(requests.map(r => {
+      const assignedName = (r.assigned_to && staffNames[r.assigned_to])
+        ? staffNames[r.assigned_to]
+        : (r.assigned_to ? 'Staff Assigned' : undefined);
+
+      return {
+        id: r.id,
+        reservationReference: r.reservation_reference || reference,
+        category: (r.category_label || r.category || 'other').toLowerCase(),
+        categoryLabel: r.category_label || r.category || 'Service Request',
+        details: r.description || r.details || '',
+        deliveryTime: r.delivery_time || 'Immediate',
+        status: (r.status || 'pending').toLowerCase(),
+        createdAt: r.created_at,
+        updatedAt: r.updated_at || r.created_at,
+        staffName: assignedName
+      };
+    }));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -1000,64 +1075,115 @@ router.get('/reservations/:reference/service-requests', async (req, res) => {
 router.post('/reservations/:reference/service-requests', async (req, res) => {
   try {
     const { reference } = req.params;
-    const { category = 'other', details = '', deliveryTime = 'Immediate' } = req.body;
+    const { category = 'other', categoryLabel, details = '', deliveryTime = 'Immediate' } = req.body;
 
     let booking = null;
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(reference);
+    const orFilter = isUuid
+      ? `id.eq.${reference},booking_reference.eq.${reference},folio_id.eq.${reference}`
+      : `booking_reference.eq.${reference},folio_id.eq.${reference}`;
+
     if (isConfigured) {
       const { data } = await require('../supabaseClient').supabase
         .from('bookings')
         .select('*')
-        .or(`booking_reference.eq.${reference},folio_id.eq.${reference}`)
+        .or(orFilter)
         .maybeSingle();
       if (data) booking = data;
     }
 
     if (!booking) {
       const all = await getBookings();
-      booking = all.find(b => (b.booking_reference || '').toLowerCase() === reference.toLowerCase());
+      booking = all.find(b =>
+        (b.booking_reference || '').toLowerCase() === reference.toLowerCase() ||
+        (b.folio_id || '').toLowerCase() === reference.toLowerCase()
+      );
     }
 
     if (!booking) {
       return res.status(404).json({ message: `Reservation "${reference}" not found.` });
     }
 
+    // Resolve room number
+    let roomNumber = booking.room_number || null;
+    if (!roomNumber && booking.room_id && isConfigured) {
+      const { data: rm } = await require('../supabaseClient').supabase
+        .from('rooms')
+        .select('room_number')
+        .eq('id', booking.room_id)
+        .maybeSingle();
+      if (rm?.room_number) roomNumber = rm.room_number;
+    }
+
+    const categoryMap = {
+      extra_towels: 'TOWELS',
+      towels: 'TOWELS',
+      housekeeping: 'CLEANING',
+      cleaning: 'CLEANING',
+      maintenance: 'MAINTENANCE',
+      minibar: 'FOOD_BEVERAGE',
+      dining: 'FOOD_BEVERAGE',
+      food_beverage: 'FOOD_BEVERAGE',
+      amenities: 'AMENITIES',
+      airport: 'OTHER',
+      other: 'OTHER'
+    };
+    const dbCategory = categoryMap[String(category || '').toLowerCase()] || 'OTHER';
+
     const requestId = crypto.randomUUID();
+    const cleanRef = booking.booking_reference || reference;
+    const effectiveLabel = categoryLabel || category;
+
     const newRequest = {
       id: requestId,
       booking_id: booking.id,
-      room_id: booking.room_id,
-      category: category.toUpperCase().replace(/\s+/g, '_'),
-      category_label: category,
-      description: details,
+      room_id: booking.room_id || 'a1111111-1111-1111-1111-111111111101',
+      room_number: String(roomNumber || '101'),
+      guest_name: booking.guest_name || 'In-House Guest',
+      category: dbCategory,
+      category_label: effectiveLabel,
+      description: details || `Service request for ${effectiveLabel}`,
       delivery_time: deliveryTime,
-      reservation_reference: reference,
+      reservation_reference: cleanRef,
       status: 'PENDING',
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
 
     if (isConfigured) {
-      await require('../supabaseClient').supabase
-        .from('room_service_requests')
-        .insert({
-          id: requestId,
-          booking_id: booking.id,
-          room_id: booking.room_id,
-          category: 'OTHER', // Default safe ENUM
-          description: details || `Service request for ${category}`,
-          delivery_time: deliveryTime,
-          category_label: category,
-          reservation_reference: reference,
-          status: 'PENDING'
-        });
+      try {
+        await require('../supabaseClient').supabase
+          .from('room_service_requests')
+          .insert({
+            id: newRequest.id,
+            booking_id: newRequest.booking_id,
+            room_id: newRequest.room_id,
+            room_number: newRequest.room_number,
+            guest_name: newRequest.guest_name,
+            category: newRequest.category,
+            category_label: newRequest.category_label,
+            description: newRequest.description,
+            delivery_time: newRequest.delivery_time,
+            reservation_reference: newRequest.reservation_reference,
+            status: 'PENDING',
+            created_at: newRequest.created_at
+          });
+      } catch (insertErr) {
+        console.warn('Customer service request insert error:', insertErr.message);
+      }
     }
 
+    const { memoryStore, realtimeBus } = require('../supabaseClient');
+    if (memoryStore && Array.isArray(memoryStore.serviceRequests)) {
+      memoryStore.serviceRequests.unshift(newRequest);
+    }
     realtimeBus.emit('service_request:created', newRequest);
 
     res.status(201).json({
       id: requestId,
-      reservationReference: reference,
+      reservationReference: cleanRef,
       category,
-      categoryLabel: category,
+      categoryLabel: effectiveLabel,
       details,
       deliveryTime,
       status: 'pending',

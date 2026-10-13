@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { QRCodeCanvas } from 'qrcode.react';
 import {
@@ -68,6 +68,28 @@ function PassView({ reference }: { reference: string }) {
     () => (query.data ? buildQrPayload(query.data.reference, query.data.stay.checkIn) : ''),
     [query.data],
   );
+
+  // Instant real-time update: reload immediately when notification bus fires
+  useEffect(() => {
+    const handleUpdate = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      const cleanRef = reference.replace(/^#/, '');
+      if (!detail?.reference || detail.reference.replace(/^#/, '') === cleanRef) {
+        query.reload();
+      }
+    };
+    window.addEventListener('stayflow:booking-updated', handleUpdate);
+    return () => window.removeEventListener('stayflow:booking-updated', handleUpdate);
+  }, [reference, query]);
+
+  // Polling fallback while booking is awaiting staff approval
+  useEffect(() => {
+    if (!query.data || (query.data.status !== 'pending' && query.data.paymentStatus !== 'awaiting_review')) return;
+    const timer = window.setInterval(() => {
+      query.reload();
+    }, 3000);
+    return () => window.clearInterval(timer);
+  }, [query.data?.status, query.data?.paymentStatus, query]);
 
   if (query.loading) {
     return (
@@ -167,7 +189,7 @@ function PassView({ reference }: { reference: string }) {
       ? `Paid via ${booking.paymentMethod.replace('_', ' ')}`
       : booking.paymentStatus === 'awaiting_review'
         ? 'Payment submitted — awaiting staff review'
-        : 'Pay at hotel on arrival';
+        : 'Payment submitted — pending verification';
 
     const details: [string, string][] = [
       ['Booking reference', booking.reference],

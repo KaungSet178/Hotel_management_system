@@ -28,6 +28,7 @@ import {
 } from '@/data/seed';
 import { staffApi } from '@/services/staffApi';
 import { useAuth } from '@/auth';
+import { broadcastLiveEvent } from '@/lib/broadcast';
 
 const PROOF_POLL_MS = 4000;
 
@@ -57,7 +58,10 @@ function proofToBookingRequest(proof: PaymentProofRecord): BookingRequest {
       payer: proof.payer ?? proof.guestName ?? 'Guest',
       recipient: 'StayFlow Hospitality Co., Ltd',
       timestamp: uploaded.toLocaleString(),
+      receiptUrl: proof.dataUrl,
+      dataUrl: proof.dataUrl,
       image: proof.dataUrl,
+      fileName: proof.fileName,
     },
   };
 }
@@ -75,10 +79,19 @@ interface AppStore {
   loading: boolean;
   refresh: () => Promise<void>;
   confirmRequest: (ref: string) => void;
-  rejectRequest: (ref: string) => void;
+  rejectRequest: (ref: string, reason?: string) => void;
   setRequestState: (ref: string, state: RequestState) => void;
   checkInBooking: (ref: string) => boolean;
-  addWalkInBooking: (guestName: string, roomNumber?: string) => boolean;
+  addWalkInBooking: (
+    guestName: string,
+    roomNumber?: string,
+    options?: {
+      nights?: number;
+      adults?: number;
+      notes?: string;
+      paymentMethod?: string;
+    },
+  ) => boolean;
   updateServiceState: (id: string, state: ServiceState) => void;
   addServiceRequest: (input: Omit<ServiceRequest, 'id' | 'state' | 'ago'>) => void;
   selectCheckoutRoom: (roomId: string) => void;
@@ -114,6 +127,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       setBookings(b);
       setRequests(reqs);
       setServiceRequests(s);
+      setBaseQueue(buildCheckoutEntries(r, b));
     } catch (err) {
       console.warn('Staff portal data sync error:', err);
     } finally {
@@ -124,24 +138,63 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   // Sync with live Supabase on mount and listen to realtime table changes
   useEffect(() => {
     let mounted = true;
+    let refreshTimer: any = null;
+
+    const debouncedRefresh = () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => {
+        if (!mounted) return;
+        Promise.all([
+          staffApi.fetchRooms(),
+          staffApi.fetchBookings(),
+          staffApi.fetchBookingRequests(),
+          staffApi.fetchServiceRequests(),
+        ]).then(([r, b, reqs, s]) => {
+          if (!mounted) return;
+          setRooms(r);
+          setBookings(b);
+          setRequests(reqs);
+          setServiceRequests(s);
+          setBaseQueue(buildCheckoutEntries(r, b));
+        });
+      }, 150);
+    };
 
     refresh();
 
     const unsubscribe = staffApi.subscribeToChanges((table) => {
       if (!mounted) return;
       if (table === 'rooms') {
-        staffApi.fetchRooms().then((r) => mounted && setRooms(r));
+        staffApi.fetchRooms().then((r) => {
+          if (!mounted) return;
+          setRooms(r);
+          staffApi.fetchBookings().then((b) => {
+            if (!mounted) return;
+            setBookings(b);
+            setBaseQueue(buildCheckoutEntries(r, b));
+          });
+        });
       } else if (table === 'bookings') {
-        staffApi.fetchBookings().then((b) => mounted && setBookings(b));
+        staffApi.fetchBookings().then((b) => {
+          if (!mounted) return;
+          setBookings(b);
+          staffApi.fetchRooms().then((r) => {
+            if (!mounted) return;
+            setRooms(r);
+            setBaseQueue(buildCheckoutEntries(r, b));
+          });
+        });
         staffApi.fetchBookingRequests().then((reqs) => mounted && setRequests(reqs));
-        staffApi.fetchRooms().then((r) => mounted && setRooms(r));
       } else if (table === 'room_service_requests') {
         staffApi.fetchServiceRequests().then((s) => mounted && setServiceRequests(s));
+      } else {
+        debouncedRefresh();
       }
     });
 
     return () => {
       mounted = false;
+      if (refreshTimer) clearTimeout(refreshTimer);
       unsubscribe();
     };
   }, [refresh]);
@@ -209,25 +262,48 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       setRequests((prev) =>
         prev.map((r) => (r.ref === ref ? { ...r, state: 'CONFIRMED' as const } : r)),
       );
-      if (req) {
-        const roomNum = req.room.match(/\d+/)?.[0];
-        const booking: Booking = {
-          ref: `#SF-${req.shortRef}`,
-          guestName: req.guestName,
-          adults: 2,
-          room: roomNum ? `Room ${roomNum}` : 'Unassigned',
-          roomCategory: req.roomCategory ?? '—',
-          checkIn: '2026-10-18',
-          checkOut: '2026-10-21',
-          nights: req.nights,
-          status: 'CONFIRMED',
-          payment: 'PREPAID',
-          amount: req.amount,
-          phone: req.phone,
-          request: req.note,
-        };
-        setBookings((prev) => [booking, ...prev]);
-      }
+      const cleanRef = normalizeBookingRef(ref);
+      setBookings((prev) => {
+        const foundIndex = prev.findIndex((b) => normalizeBookingRef(b.ref) === cleanRef);
+        if (foundIndex >= 0) {
+          const updated = [...prev];
+          updated[foundIndex] = {
+            ...updated[foundIndex],
+            status: 'CONFIRMED',
+            payment: 'PREPAID',
+          };
+          return updated;
+        }
+        if (req) {
+          const roomNum = req.room.match(/\d+/)?.[0];
+          const booking: Booking = {
+            ref: `#SF-${req.shortRef}`,
+            guestName: req.guestName,
+            adults: 2,
+            room: roomNum ? `Room ${roomNum}` : 'Unassigned',
+            roomCategory: req.roomCategory ?? '—',
+            checkIn: todayIso(),
+            checkOut: addDays(todayIso(), req.nights || 2),
+            nights: req.nights,
+            status: 'CONFIRMED',
+            payment: 'PREPAID',
+            amount: req.amount,
+            phone: req.phone,
+            request: req.note,
+          };
+          return [booking, ...prev];
+        }
+        return prev;
+      });
+
+      const assignedRoom = req?.room?.match(/\d+/)?.[0];
+
+      // Broadcast instant approval notification to customer portal & tabs
+      broadcastLiveEvent('BOOKING_APPROVED', {
+        reference: ref,
+        guestName: req?.guestName,
+        roomNumber: assignedRoom ? `Room ${assignedRoom}` : 'Assigned Suite',
+      });
 
       // Persist verification to Supabase and Express backend gateway
       staffApi.verifyPaymentProof(ref, true, 'Approved by Front Desk Staff', user).then(() => {
@@ -245,21 +321,49 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     [requests, user],
   );
 
-  const rejectRequest = useCallback((ref: string) => {
-    setRequests((prev) =>
-      prev.map((r) => (r.ref === ref ? { ...r, state: 'REJECTED' as const } : r)),
-    );
+  const rejectRequest = useCallback(
+    (ref: string, reason = 'Declined during payment review') => {
+      const target = requests.find((r) => r.ref === ref);
+      setRequests((prev) =>
+        prev.map((r) =>
+          r.ref === ref ? { ...r, state: 'REJECTED' as const, note: reason } : r,
+        ),
+      );
 
-    staffApi.verifyPaymentProof(ref, false, 'Rejected by Front Desk Staff', user).then(() => {
-      Promise.all([
-        staffApi.fetchBookingRequests(),
-        staffApi.fetchRooms(),
-      ]).then(([reqs, r]) => {
-        setRequests(reqs);
-        setRooms(r);
+      // Also cancel any corresponding booking entry
+      const cleanRef = normalizeBookingRef(ref);
+      setBookings((prev) =>
+        prev.map((b) =>
+          normalizeBookingRef(b.ref) === cleanRef
+            ? { ...b, status: 'CANCELLED' as const }
+            : b,
+        ),
+      );
+
+      // Broadcast instant cancellation notification to customer portal & tabs
+      broadcastLiveEvent('BOOKING_REJECTED', {
+        reference: ref,
+        guestName: target?.guestName,
+        reason,
       });
-    }).catch((err) => console.error('rejectRequest backend error:', err));
-  }, [user]);
+
+      staffApi
+        .verifyPaymentProof(ref, false, reason, user)
+        .then(() => {
+          Promise.all([
+            staffApi.fetchBookings(),
+            staffApi.fetchBookingRequests(),
+            staffApi.fetchRooms(),
+          ]).then(([b, reqs, r]) => {
+            setBookings(b);
+            setRequests(reqs);
+            setRooms(r);
+          });
+        })
+        .catch((err) => console.error('rejectRequest backend error:', err));
+    },
+    [requests, user],
+  );
 
   const setRequestState = useCallback((ref: string, state: RequestState) => {
     setRequests((prev) => prev.map((r) => (r.ref === ref ? { ...r, state } : r)));
@@ -268,12 +372,15 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   const checkInBooking = useCallback(
     (ref: string): boolean => {
       const target = bookings.find((b) => b.ref === ref);
-      if (!target || (target.status !== 'CONFIRMED' && target.status !== 'PENDING')) {
+      if (!target || target.status !== 'CONFIRMED') {
         return false;
       }
       setBookings((prev) =>
         prev.map((b) => (b.ref === ref ? { ...b, status: 'CHECKED_IN' as const } : b)),
       );
+
+      broadcastLiveEvent('BOOKING_CHECKED_IN', { reference: ref });
+      broadcastLiveEvent('ROOM_UPDATED', { reference: ref, status: 'OCCUPIED' });
 
       // Persist direct check-in to Supabase backend
       staffApi.checkInDirect(ref, user).then(() => {
@@ -289,25 +396,40 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   );
 
   const addWalkInBooking = useCallback(
-    (guestName: string, roomNumber?: string): boolean => {
+    (
+      guestName: string,
+      roomNumber?: string,
+      options?: {
+        nights?: number;
+        adults?: number;
+        notes?: string;
+        paymentMethod?: string;
+      },
+    ): boolean => {
       const available = rooms.filter((r) => r.status === 'AVAILABLE');
       const chosen = available.find((r) => r.number === roomNumber) ?? available[0];
       if (!chosen) return false;
       const next = folioCounter + 1;
       const folioNo = `#WI-2026-${next}`;
-      const out = addDays(todayIso(), 2);
+      const nightsCount = Math.max(1, options?.nights || 2);
+      const numAdults = options?.adults || 2;
+      const out = addDays(todayIso(), nightsCount);
+      const totalAmount = chosen.pricePerNight * nightsCount;
+      const chosenPaymentMethod = options?.paymentMethod === 'CARD' ? 'CARD' : 'KBZPAY';
+
       const booking: Booking = {
         ref: folioNo,
         guestName,
-        adults: 2,
+        adults: numAdults,
         room: `Room ${chosen.number}`,
         roomCategory: chosen.category,
         checkIn: todayIso(),
         checkOut: out,
-        nights: 2,
-        status: 'CONFIRMED',
-        payment: 'PREPAID',
-        amount: chosen.pricePerNight * 2,
+        nights: nightsCount,
+        status: 'CHECKED_IN',
+        payment: 'PAID',
+        amount: totalAmount,
+        note: options?.notes,
       };
       setBookings((prev) => [booking, ...prev]);
       setRooms((prev) =>
@@ -318,21 +440,37 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       setWalkIn({ folio: folioNo, guestName, room: `Room ${chosen.number}` });
       setFolioCounter(next);
 
-      // Persist walk-in to Supabase and backend API gateway
-      staffApi.createWalkInBooking({
-        guestName,
+      broadcastLiveEvent('NEW_BOOKING', {
+        reference: folioNo,
+        channel: 'WALK_IN',
         roomNumber: chosen.number,
-        roomId: chosen.id,
-        nights: 2,
-        amount: chosen.pricePerNight * 2,
-        paymentMethod: 'PAY_AT_HOTEL',
-        clerkName: user?.name,
-      }, user).then(() => {
-        Promise.all([staffApi.fetchBookings(), staffApi.fetchRooms()]).then(([b, r]) => {
-          setBookings(b);
-          setRooms(r);
-        });
-      }).catch((err) => console.error('createWalkInBooking error:', err));
+      });
+      broadcastLiveEvent('ROOM_UPDATED', { roomId: chosen.id, status: 'OCCUPIED' });
+
+      // Persist walk-in to Supabase and backend API gateway
+      staffApi
+        .createWalkInBooking(
+          {
+            guestName,
+            roomNumber: chosen.number,
+            roomId: chosen.id,
+            nights: nightsCount,
+            amount: totalAmount,
+            paymentMethod: chosenPaymentMethod,
+            clerkName: user?.name,
+            notes: options?.notes,
+          },
+          user,
+        )
+        .then(() => {
+          broadcastLiveEvent('BOOKING_CREATED', { reference: folioNo, channel: 'WALK_IN' });
+          broadcastLiveEvent('ROOM_UPDATED', { roomId: chosen.id, status: 'OCCUPIED' });
+          Promise.all([staffApi.fetchBookings(), staffApi.fetchRooms()]).then(([b, r]) => {
+            setBookings(b);
+            setRooms(r);
+          });
+        })
+        .catch((err) => console.error('createWalkInBooking error:', err));
 
       return true;
     },
@@ -340,8 +478,16 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   );
 
   const updateServiceState = useCallback((id: string, state: ServiceState) => {
-    setServiceRequests((prev) => prev.map((s) => (s.id === id ? { ...s, state } : s)));
-    staffApi.updateServiceState(id, state, user?.name).catch((err) => {
+    const staffName = user?.name || 'Daw Nu Nu (Front Desk)';
+    setServiceRequests((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, state, assignee: s.assignee || staffName } : s))
+    );
+    broadcastLiveEvent('SERVICE_REQUEST_UPDATED', {
+      requestId: id,
+      status: state,
+      assignee: staffName,
+    });
+    staffApi.updateServiceState(id, state, user?.id || user?.email).catch((err) => {
       console.warn('updateServiceState backend error:', err);
     });
   }, [user]);
@@ -363,6 +509,11 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       guest: input.guest,
       urgency: input.urgency,
     }).then(() => {
+      broadcastLiveEvent('SERVICE_REQUEST_CREATED', {
+        roomNumber: input.room,
+        category: input.category,
+        title: input.title,
+      });
       staffApi.fetchServiceRequests().then(setServiceRequests);
     }).catch((err) => console.error('addServiceRequest error:', err));
   }, []);
@@ -382,12 +533,24 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
         entry.roomId === activeRoomId ? { ...entry, settled: true } : entry,
       ),
     );
-    // Find room and set to CLEANING turnover
+    // Find room and return directly to AVAILABLE inventory
     const entry = baseQueue.find((e) => e.roomId === activeRoomId);
     const roomNum = entry?.folio.room.match(/\d+/)?.[0] || '304';
     const roomTarget = rooms.find((r) => r.number === roomNum);
+
+    if (entry?.bookingRef) {
+      staffApi.checkOutBooking(entry.bookingRef).then(() => {
+        Promise.all([staffApi.fetchRooms(), staffApi.fetchBookings()]).then(([r, b]) => {
+          setRooms(r);
+          setBookings(b);
+        });
+      }).catch((err) => console.warn('settleFolio checkOutBooking error:', err));
+    }
+
     if (roomTarget) {
-      staffApi.updateRoomStatus(roomTarget.id, 'CLEANING').then(() => {
+      staffApi.updateRoomStatus(roomTarget.id, 'AVAILABLE').then(() => {
+        broadcastLiveEvent('BOOKING_CHECKED_OUT', { roomNumber: roomNum });
+        broadcastLiveEvent('ROOM_UPDATED', { roomNumber: roomNum, status: 'AVAILABLE' });
         staffApi.fetchRooms().then(setRooms);
       }).catch((err) => console.warn('settleFolio updateRoomStatus error:', err));
     }

@@ -133,7 +133,7 @@ export type BookingStatus =
   | 'cancelled'
   | 'no_show';
 
-export type PaymentMethod = 'KBZPAY' | 'WAVEPAY' | 'CB_PAY' | 'CARD' | 'PAY_AT_HOTEL';
+export type PaymentMethod = 'KBZPAY' | 'WAVEPAY' | 'CB_PAY' | 'CARD';
 
 export type PaymentStatus =
   | 'pending'

@@ -1,39 +1,60 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   Bell,
   Building2,
-  CheckCheck,
+  CalendarCheck,
   ChevronDown,
   ChevronRight,
+  Clock,
+  ConciergeBell,
   FileText,
+  KeyRound,
   LogOut,
   MapPin,
   Menu,
+  Receipt,
   Search,
-  Wrench,
   X,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { ADMIN_NAV_ITEMS, NAV_ITEMS } from '@/nav';
 import { LOCALE } from '@/data/seed';
+import { formatMyanmarDateTime } from '@/lib/format';
 import { useAppStore } from '@/store';
 import { useAuth } from '@/auth';
 import { useToast } from '@/components/toast';
 import { ProfileModal } from '@/components/profile';
 import { Avatar, CountBadge } from '@/components/ui';
+import { useNotifications, type StaffNotification } from '@/context/NotificationContext';
 
-interface BellItem {
-  Icon: LucideIcon;
-  title: string;
-  desc: string;
-  time: string;
-  /** Staff route the notification belongs to. */
-  to: string;
-  /** Admin route equivalent (fallback: `to`). */
-  adminTo?: string;
+function formatTimeAgo(timestamp: number): string {
+  const diffSec = Math.floor((Date.now() - timestamp) / 1000);
+  if (diffSec < 45) return 'Just now';
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  return `${Math.floor(diffHr / 24)}d ago`;
+}
+
+function getNotificationIcon(type: string): LucideIcon {
+  switch (type) {
+    case 'NEW_BOOKING':
+      return CalendarCheck;
+    case 'PAYMENT_PROOF':
+      return FileText;
+    case 'SERVICE_REQUEST':
+      return ConciergeBell;
+    case 'CHECK_IN':
+      return KeyRound;
+    case 'PAYMENT_SETTLED':
+      return Receipt;
+    default:
+      return Bell;
+  }
 }
 
 function Brand() {
@@ -65,7 +86,7 @@ function SidebarContent({
   const isAdmin = user?.role === 'ADMIN';
 
   const queueCount = requests.filter(
-    (r) => r.state === 'PROOF_UPLOADED' || r.state === 'ROOM_CONFLICT',
+    (r) => r.state === 'PROOF_UPLOADED',
   ).length;
   const arrivalsCount = bookings.filter(
     (b) => b.status === 'PENDING' || b.status === 'CONFIRMED',
@@ -231,52 +252,104 @@ function SidebarContent({
 function NotificationsPanel({
   items,
   onOpen,
+  onMarkAllAsRead,
   onClear,
 }: {
-  items: BellItem[];
-  onOpen: (item: BellItem) => void;
+  items: StaffNotification[];
+  onOpen: (item: StaffNotification) => void;
+  onMarkAllAsRead: () => void;
   onClear: () => void;
 }) {
+  const unreadCount = items.filter((i) => !i.read).length;
+
   return (
-    <div className="w-full rounded-xl border border-outline-variant/60 bg-surface-container-lowest shadow-[0_24px_60px_-24px_rgba(11,22,38,0.4)]">
-      <div className="flex items-center justify-between border-b border-outline-variant/40 px-4 py-3">
-        <p className="text-label-md font-semibold text-on-surface">Notifications</p>
-        <button
-          type="button"
-          onClick={onClear}
-          className="rounded-full px-2 py-1 text-label-sm font-medium text-secondary transition hover:bg-secondary-container/40"
-        >
-          Mark all read
-        </button>
+    <div className="w-full rounded-2xl border border-outline-variant/60 bg-surface-container-lowest shadow-[0_24px_60px_-24px_rgba(11,22,38,0.4)] overflow-hidden">
+      <div className="flex items-center justify-between border-b border-outline-variant/40 px-4 py-3 bg-surface-container-low/50">
+        <div className="flex items-center gap-2">
+          <p className="text-label-md font-semibold text-on-surface">Live Alerts</p>
+          {unreadCount > 0 && (
+            <span className="rounded-full bg-secondary-container px-2 py-0.5 text-label-xs font-bold text-on-secondary-container">
+              {unreadCount} new
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {items.length > 0 && (
+            <button
+              type="button"
+              onClick={onMarkAllAsRead}
+              className="rounded-full px-2 py-1 text-label-xs font-semibold text-secondary transition hover:bg-secondary-container/40"
+            >
+              Mark all read
+            </button>
+          )}
+        </div>
       </div>
       {items.length === 0 ? (
-        <p className="px-4 py-6 text-center text-body-sm text-on-surface-variant">
-          You're all caught up.
+        <p className="px-4 py-8 text-center text-body-sm text-on-surface-variant">
+          You're all caught up. Real-time updates appear here.
         </p>
       ) : (
-        <ul className="divide-y divide-outline-variant/40">
-          {items.map((item) => (
-            <li key={item.title}>
-              <button
-                type="button"
-                onClick={() => onOpen(item)}
-                className="flex w-full cursor-pointer items-start gap-3 px-4 py-3 text-left transition hover:bg-surface-container-low focus-visible:bg-surface-container-low focus-visible:outline-none"
-              >
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-container">
-                  <item.Icon className="h-4 w-4 text-on-surface-variant" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-label-md font-medium text-on-surface">{item.title}</p>
-                  <p className="truncate text-body-sm text-on-surface-variant">{item.desc}</p>
-                </div>
-                <span className="rounded-full bg-surface-container px-2 py-0.5 text-label-sm text-on-surface-variant">
-                  {item.time}
-                </span>
-                <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-on-surface-variant/60" />
-              </button>
-            </li>
-          ))}
+        <ul className="max-h-96 overflow-y-auto divide-y divide-outline-variant/30">
+          {items.map((item) => {
+            const Icon = getNotificationIcon(item.type);
+            return (
+              <li key={item.id}>
+                <button
+                  type="button"
+                  onClick={() => onOpen(item)}
+                  className={cn(
+                    'flex w-full cursor-pointer items-start gap-3 px-4 py-3 text-left transition hover:bg-surface-container-low focus-visible:bg-surface-container-low focus-visible:outline-none',
+                    !item.read ? 'bg-secondary-container/15' : 'bg-transparent',
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'flex h-8 w-8 shrink-0 items-center justify-center rounded-xl',
+                      !item.read
+                        ? 'bg-secondary text-on-secondary'
+                        : 'bg-surface-container text-on-surface-variant',
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p
+                      className={cn(
+                        'text-label-md truncate',
+                        !item.read ? 'font-bold text-on-surface' : 'font-medium text-on-surface/80',
+                      )}
+                    >
+                      {item.title}
+                    </p>
+                    <p className="truncate text-body-sm text-on-surface-variant">{item.desc}</p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <span className="text-label-xs text-on-surface-variant/70 font-mono">
+                      {formatTimeAgo(item.timestamp)}
+                    </span>
+                    {!item.read && (
+                      <span className="h-2 w-2 rounded-full bg-secondary" />
+                    )}
+                  </div>
+                  <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-on-surface-variant/40" />
+                </button>
+              </li>
+            );
+          })}
         </ul>
+      )}
+      {items.length > 0 && (
+        <div className="border-t border-outline-variant/30 px-4 py-2 bg-surface-container-low/30 flex items-center justify-between">
+          <span className="text-label-xs text-on-surface-variant/60">Front Desk Realtime Hub</span>
+          <button
+            type="button"
+            onClick={onClear}
+            className="text-label-xs text-on-surface-variant hover:text-error transition"
+          >
+            Clear all
+          </button>
+        </div>
       )}
     </div>
   );
@@ -294,36 +367,20 @@ export function Shell() {
 
   const isAdminView = location.pathname.startsWith('/admin');
 
-  const [notifications, setNotifications] = useState<BellItem[]>([
-    {
-      Icon: FileText,
-      title: 'Deposit proof awaiting verification',
-      desc: 'SF-2025-9510 · Thant Zin Oo · 759,000 MMK',
-      time: 'now',
-      to: '/requests',
-      adminTo: '/admin/finances',
-    },
-    {
-      Icon: Wrench,
-      title: 'Room 308 — urgent maintenance',
-      desc: 'AC thermostat calibration reported 12m ago',
-      time: '12m',
-      to: '/availability',
-      adminTo: '/admin/rooms',
-    },
-    {
-      Icon: CheckCheck,
-      title: 'KBZPay settlement reconciled',
-      desc: '4 of 5 transactions matched automatically',
-      time: '2h',
-      to: '/checkout',
-      adminTo: '/admin/finances',
-    },
-  ]);
+  const [mmtTime, setMmtTime] = useState(() => formatMyanmarDateTime(new Date()));
 
-  const openNotification = (item: BellItem): void => {
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setMmtTime(formatMyanmarDateTime(new Date()));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const { notifications, unreadCount, markAsRead, markAllAsRead, clearAll } = useNotifications();
+
+  const openNotification = (item: StaffNotification): void => {
+    markAsRead(item.id);
     const target = isAdminView && item.adminTo ? item.adminTo : item.to;
-    setNotifications((prev) => prev.filter((n) => n !== item));
     setNotifOpen(false);
     navigate(target);
   };
@@ -376,6 +433,11 @@ export function Shell() {
             {isAdminView ? 'Executive Management Suite' : 'Front Desk 01 • Main Wing'}
           </div>
 
+          <div className="hidden items-center gap-1.5 rounded-full border border-secondary/20 bg-secondary-container/30 px-3 py-1 font-mono text-label-xs font-semibold text-secondary sm:inline-flex">
+            <Clock className="h-3.5 w-3.5" />
+            {mmtTime}
+          </div>
+
           <form
             onSubmit={submitSearch}
             className="relative hidden max-w-md flex-1 sm:block"
@@ -401,19 +463,22 @@ export function Shell() {
               aria-label="Notifications"
             >
               <Bell className="h-5 w-5" />
-              {notifications.length > 0 && (
-                <span className="absolute top-1.5 right-2 h-2 w-2 rounded-full bg-error ring-2 ring-white" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-error px-1 text-[10px] font-bold text-white shadow-xs animate-pulse">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
               )}
             </button>
             {notifOpen && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setNotifOpen(false)} />
-                <div className="absolute right-0 z-50 mt-2 w-80 max-w-[calc(100vw-2rem)]">
+                <div className="absolute right-0 z-50 mt-2 w-84 sm:w-96 max-w-[calc(100vw-2rem)]">
                   <NotificationsPanel
                     items={notifications}
                     onOpen={openNotification}
+                    onMarkAllAsRead={markAllAsRead}
                     onClear={() => {
-                      setNotifications([]);
+                      clearAll();
                       setNotifOpen(false);
                       toast.success('Notifications cleared');
                     }}

@@ -54,17 +54,58 @@ export function initials(name: string): string {
     .join('');
 }
 
-/** Today's date as `YYYY-MM-DD`. */
+export const MYANMAR_TIMEZONE = 'Asia/Yangon';
+
+/** Today's date as `YYYY-MM-DD` in Myanmar Time (Asia/Yangon, UTC+06:30). */
 export function todayIso(): string {
-  const d = new Date();
-  const p = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  return new Intl.DateTimeFormat('en-CA', { timeZone: MYANMAR_TIMEZONE }).format(new Date());
 }
 
-/** Add `n` days to a `YYYY-MM-DD` date. */
+/** Add `n` days to a `YYYY-MM-DD` date safely preserving Myanmar date boundaries. */
 export function addDays(iso: string, days: number): string {
   const [y, m, d] = iso.split('-').map(Number);
-  const out = new Date(y, m - 1, d + days);
-  const p = (n: number) => String(n).padStart(2, '0');
-  return `${out.getFullYear()}-${p(out.getMonth() + 1)}-${p(out.getDate())}`;
+  const target = new Date(Date.UTC(y, m - 1, d + days, 12, 0, 0));
+  return new Intl.DateTimeFormat('en-CA', { timeZone: MYANMAR_TIMEZONE }).format(target);
+}
+
+/** Formats a date/timestamp to Myanmar Time (e.g. `Tue, 13 Oct 2026, 02:45 PM MMT`). */
+export function formatMyanmarDateTime(date: Date | string | number = new Date(), includeSeconds = false): string {
+  const d = typeof date === 'string' || typeof date === 'number' ? new Date(date) : date;
+  return (
+    new Intl.DateTimeFormat('en-US', {
+      timeZone: MYANMAR_TIMEZONE,
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: includeSeconds ? '2-digit' : undefined,
+      hour12: true,
+    }).format(d) + ' MMT'
+  );
+}
+
+/** Formats a date into a full human-readable string in Myanmar time: e.g. `Tuesday, 13 October 2026`. */
+export function formatMyanmarFullDate(date: Date | string | number = new Date()): string {
+  const d = typeof date === 'string' || typeof date === 'number' ? new Date(date) : date;
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: MYANMAR_TIMEZONE,
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(d);
+}
+
+/** Formats an ISO string (YYYY-MM-DD) into short weekday label and 2-digit day number in Myanmar timezone. */
+export function getDayLabelAndNum(isoDate: string): { dayLabel: string; dayNum: string } {
+  const [y, m, d] = isoDate.split('-').map(Number);
+  const dateObj = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
+  const dayLabel = new Intl.DateTimeFormat('en-US', {
+    timeZone: MYANMAR_TIMEZONE,
+    weekday: 'short',
+  }).format(dateObj);
+  const dayNum = String(d).padStart(2, '0');
+  return { dayLabel, dayNum };
 }

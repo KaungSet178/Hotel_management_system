@@ -904,6 +904,18 @@ async function runTests() {
     if (rateLimitJson.code !== 'RATE_LIMIT_EXCEEDED') throw new Error('Expected RATE_LIMIT_EXCEEDED code');
   });
 
+  // Post-Test Teardown: Clean up test bookings to keep Supabase pristine
+  try {
+    const { createClient } = require('@supabase/supabase-js');
+    const cleanupClient = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY, { auth: { persistSession: false } });
+    const { data: testEntries } = await cleanupClient.from('bookings').select('id').or('booking_reference.like.EXP-%,booking_reference.like.LUX-%');
+    if (testEntries && testEntries.length > 0) {
+      await cleanupClient.from('bookings').delete().in('id', testEntries.map(e => e.id));
+    }
+  } catch (cleanErr) {
+    // ignore
+  }
+
   console.log(`\n============================================================`);
   console.log(`Phase 1, Phase 2, Phase 3 & Phase 4 Test Results: ${passed} Passed, ${failed} Failed`);
   console.log(`============================================================\n`);

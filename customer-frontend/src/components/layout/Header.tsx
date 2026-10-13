@@ -5,6 +5,7 @@ import { Container } from '@/components/ui/section';
 import { buttonStyles } from '@/components/ui/button';
 import { cn } from '@/lib/cn';
 import { ProfileMenu } from '@/components/account/ProfileMenu';
+import { NotificationBell } from './NotificationBell';
 import { SupportDialog } from './SupportDialog';
 
 const NAV = [
@@ -72,6 +73,7 @@ export function Header() {
           <Link to="/search" className={buttonStyles('primary', 'sm', 'hidden sm:inline-flex')}>
             Book Now
           </Link>
+          <NotificationBell />
           <ProfileMenu />
           <button
             type="button"

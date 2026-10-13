@@ -127,86 +127,54 @@ Total Verified Test Coverage:        90 Passed, 0 Failed (100%)
 
 ---
 
+### Phase 8: Staff Operations Portal, Real-Time Sync & Autonomous Room Inventory
+* **Staff Front Desk & Admin Console (`staff-frontend/`):**
+  * Complete operational workspace supporting Front Desk (`RECEPTIONIST`), Housekeeping (`HOUSEKEEPING`), and Management (`ADMIN`).
+  * Strict role routing: Administrators are restricted to executive yield analytics, channel management, and audit logs; staff members are restricted to desk operations.
+* **Payment Slip Verification & Dual-Pipeline Visibility:**
+  * Online reservations waiting for bank transfer review appear simultaneously in `/requests` and the `/reservations` Waiting Approval queue.
+  * Direct rendering and enlargement modal for uploaded payment proof screenshots.
+  * Approving payment sets booking to `CONFIRMED` and `PAID`. Rejecting payment marks booking `CANCELLED` and immediately releases the room.
+  * Unapproved reservations are strictly blocked from QR check-in until verified.
+* **Cross-Portal Real-Time Synchronization & Sound Notifications:**
+  * Bi-directional live broadcast using Supabase Realtime (`stayflow-live-broadcast`).
+  * Customer portal immediately reacts to staff payment approval without needing manual page refresh.
+  * Audio chime and notification badge indicators for new bookings and service updates.
+* **In-Room Concierge & Guest Services Dispatch:**
+  * Real-time 3-tier KanBan dispatch (`PENDING` ➔ `IN_PROGRESS` ➔ `COMPLETED`).
+  * Fix and persistence of staff assignment and work order status in `room_service_requests`.
+* **Autonomous Inventory Self-Healing & Overdue Room Release:**
+  * **Strict Derived Occupancy:** Rooms are only `OCCUPIED` if an active in-house booking is attached, preventing phantom/ghost occupancies.
+  * **Immediate Overdue Room Release:** When a guest fails to check in on their scheduled check-in date (`check_in_date < today`), the reservation is automatically cancelled as no-show, and their room **immediately becomes `AVAILABLE` at once** for walk-in booking.
+  * **PostgreSQL Trigger Migrations:**
+    * `20261014_010_auto_room_status_sync_trigger.sql`: Syncs room status automatically on booking transitions.
+    * `20261014_011_auto_cancel_overdue_checkins.sql`: Stored procedure for automated no-show room release.
+  * Continuous 30-second cancellation worker in `backend/server/cancellationJob.js`.
+
+---
+
 ## 3. What Is Left to Implement (Remaining Work Roadmap)
 
-With the Customer-facing guest experience and backend engine 100% complete, the remaining implementation tasks focus on **Staff Operations UI**, **Payment Slip Verification Workflow**, and **Cloud Production Deployment**:
+With the Customer guest experience, Backend engine, and Staff Operations Portal 100% complete, the remaining implementation tasks focus on **Cloud Production Deployment**:
 
 ```text
 Remaining Work Roadmap
-├── 1. Staff Operations Portal UI (Front-Desk, Housekeeping & Admin)
-│   ├── Receptionist Live Room Rack Grid View (Color-coded status tiles)
-│   ├── Front-Desk Camera/Webcam QR Code Scanner (/api/check-in/scan)
-│   ├── Guest 1-Click Check-Out Workflow (/api/check-out/:id)
-│   ├── Housekeeping Mobile Cleaning Queue (Mark Clean & Ready)
-│   ├── Housekeeping In-Room Service Requests Board (Live status progression)
-│   └── Admin Occupancy & Revenue Analytics Dashboard
-├── 2. Bank Transfer Payment Slip Verification Workflow
-│   ├── Staff UI to view uploaded payment proof slips
-│   ├── Staff Approval endpoint (PATCH /api/bookings/:id/payment-proof/verify -> PAID)
-│   └── Staff Rejection endpoint with reason notes
-└── 3. Cloud Production Deployment & Live Webhooks
-    ├── Express Backend deployment to cloud PaaS (Render / Railway)
+└── Cloud Production Deployment & Live Webhooks
+    ├── Express Backend deployment to cloud PaaS (Render / Railway / AWS)
     ├── Customer Frontend deployment to CDN (Vercel / Netlify)
+    ├── Staff Operations Portal deployment to private staff domain
     └── Live Stripe & KBZPay production webhook URL registration
 ```
 
 ---
 
-### Priority 1: Staff Operations Portal UI
-
-All backend API endpoints and real-time SSE events for staff operations are already built and tested. What is needed is the frontend UI dashboard for hotel staff:
-
-#### 1. Front-Desk Reception Dashboard
-* **Live Room Rack Grid View:**
-  * Color-coded room grid:
-    * 🟢 Green: `AVAILABLE`
-    * 🔴 Red: `OCCUPIED`
-    * 🟡 Yellow: `CLEANING`
-    * 🟣 Purple: `MAINTENANCE`
-  * Real-time tile updates without page refresh via `/api/live-events` (SSE).
-* **QR Code Check-In Camera Scanner:**
-  * Webcam / mobile camera scanner integrated using browser `html5-qrcode` or equivalent.
-  * Scans guest's digital pass QR code (`qr_token`), submits to `POST /api/check-in/scan`, and instantly marks room `OCCUPIED`.
-* **Guest Check-Out Action:**
-  * 1-click check-out button calling `POST /api/check-out/:id`.
-  * Transitions booking to `CHECKED_OUT` and automatically switches room to `CLEANING` for housekeeping.
-
-#### 2. Housekeeping Mobile/Tablet Dashboard
-* **Cleaning Queue:**
-  * Displays rooms currently flagged as `CLEANING`.
-  * Action button: *"Mark Clean & Ready"* calling `PATCH /api/rooms/:id/status` with `status: "AVAILABLE"`.
-* **In-Room Service Requests Board:**
-  * Real-time list of guest requests received from in-room concierge.
-  * Status updater: `PENDING` ➔ `IN_PROGRESS` ➔ `COMPLETED` calling `PATCH /api/service-requests/:id/status`.
-
-#### 3. General Manager / Admin Dashboard
-* **Hotel Analytics:**
-  * Real-time occupancy percentage and revenue totals.
-* **Policy & Background Jobs Control:**
-  * Manual trigger button for 24-hour unpaid booking cancellation (`POST /api/jobs/trigger-cancellation`).
-  * System audit log viewer displaying timestamps, actors, and actions.
-
----
-
-### Priority 2: Bank Transfer Payment Slip Verification Workflow
-
-Guests can now upload bank transfer screenshots via `POST /api/bookings/:bookingId/payment-proof`. To complete this workflow:
-* **Staff Verification Endpoint:**
-  * Add `PATCH /api/bookings/:id/payment-proof/verify` requiring `RECEPTIONIST` or `ADMIN` role.
-  * If approved: updates `payment_status` to `PAID`, clears `auto_cancel_at`, and broadcasts `booking:paid`.
-  * If rejected: records rejection notes and notifies guest.
-* **Staff Verification UI:**
-  * Image modal in the staff dashboard to inspect the receipt screenshot and click "Approve" or "Reject".
-
----
-
-### Priority 3: Cloud Production Deployment
+### Priority 1: Cloud Production Deployment
 
 * **Backend Deployment:**
   * Deploy `backend/` to Render, Railway, or AWS.
   * Set production environment variables (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_WEBHOOK_SECRET`, `FRONTEND_URL`).
 * **Frontend Deployment:**
-  * Deploy `customer-frontend/` to Vercel or Netlify.
+  * Deploy `customer-frontend/` and `staff-frontend/` to Vercel or Netlify.
   * Set `VITE_API_BASE_URL` to the public backend domain.
 * **Live Webhooks & SSL:**
   * Register live webhook callback URLs in Stripe and KBZPay portals.

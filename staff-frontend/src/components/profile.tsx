@@ -25,7 +25,7 @@ export function ProfileModal({ open, onClose }: { open: boolean; onClose: () => 
   const inHouse = bookings.filter((b) => b.status === 'CHECKED_IN').length;
   const arrivals = bookings.filter((b) => b.status === 'CONFIRMED' || b.status === 'CHECKED_IN').length;
   const pendingProofs = requests.filter(
-    (r) => r.state === 'PROOF_UPLOADED' || r.state === 'ROOM_CONFLICT',
+    (r) => r.state === 'PROOF_UPLOADED',
   ).length;
   const total = folio.roomCharges + folio.incidentals + folio.taxes;
 

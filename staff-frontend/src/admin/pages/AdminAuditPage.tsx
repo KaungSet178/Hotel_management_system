@@ -14,6 +14,7 @@ import { AdminHeader } from '../components/AdminHeader';
 import { cn } from '@/lib/cn';
 import { downloadCsv } from '@/lib/download';
 import { useToast } from '@/components/toast';
+import { formatMyanmarDateTime } from '@/lib/format';
 
 export function AdminAuditPage() {
   const toast = useToast();
@@ -51,7 +52,7 @@ export function AdminAuditPage() {
   const handleExportCsv = () => {
     const headers = [
       'Audit ID',
-      'Timestamp (UTC)',
+      'Timestamp (MMT)',
       'Actor Name',
       'Actor Role',
       'Action Code',
@@ -63,7 +64,7 @@ export function AdminAuditPage() {
 
     const rows = filteredLogs.map((l) => [
       l.id,
-      l.timestamp,
+      formatMyanmarDateTime(l.timestamp, true),
       l.actor,
       l.actorRole,
       l.action,
@@ -219,7 +220,7 @@ export function AdminAuditPage() {
           <table className="w-full text-left border-collapse text-body-sm">
             <thead>
               <tr className="border-b border-outline-variant/40 bg-surface-container-low/50 text-[11px] font-bold uppercase tracking-wider text-on-surface-variant">
-                <th className="px-4 py-3">Timestamp (UTC)</th>
+                <th className="px-4 py-3">Timestamp (MMT)</th>
                 <th className="px-4 py-3">Actor & Role</th>
                 <th className="px-4 py-3">Action Code</th>
                 <th className="px-4 py-3">Target Entity</th>
@@ -235,7 +236,7 @@ export function AdminAuditPage() {
                 return (
                   <tr key={log.id} className="hover:bg-surface-container-low/40 transition">
                     <td className="px-4 py-3.5 font-mono text-label-xs text-on-surface-variant whitespace-nowrap">
-                      {new Date(log.timestamp).toLocaleString()}
+                      {formatMyanmarDateTime(log.timestamp, true)}
                     </td>
                     <td className="px-4 py-3.5">
                       <p className="font-bold text-on-surface">{log.actor}</p>

@@ -67,7 +67,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   {
     label: 'Booking Requests & Payment Verification',
-    description: 'Deposits, pay-at-hotel, conflicts',
+    description: 'Deposit slips and payment verification',
     to: '/requests',
     icon: BookCheck,
   },

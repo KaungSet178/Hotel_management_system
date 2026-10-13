@@ -62,8 +62,13 @@ function isNetworkError(err: unknown): boolean {
 function buildDemoUser(preset: DemoPreset): StaffUser {
   const local = preset.email.split('@')[0] || 'staff';
   const name = local.charAt(0).toUpperCase() + local.slice(1);
+  const idMap: Record<string, string> = {
+    'admin@hotel.com': 'd7ac82d1-9c43-4525-906c-fa383406daba',
+    'reception@hotel.com': '21f75765-2d96-40c0-9d9e-b63efead3945',
+    'housekeeping@hotel.com': '00000000-0000-0000-0000-000000000003',
+  };
   return {
-    id: `demo-${preset.role.toLowerCase()}`,
+    id: idMap[preset.email] || '21f75765-2d96-40c0-9d9e-b63efead3945',
     name,
     email: preset.email,
     role: preset.role,

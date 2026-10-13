@@ -82,14 +82,42 @@ Per hospitality security standards and explicit product requirements:
 
 ---
 
-## 5. Staff Front Desk Operations
+## 5. Staff Front Desk Operations & Real-Time Workflows
 
-- **Reservations Registry (`/reservations`):** Real-time booking management filtered by `ALL`, `PENDING`, `TODAY`, `UPCOMING`, and `IN HOUSE`.
-- **Availability & Walk-in Booking (`/availability`):** Interactive room rack for counter guest booking with instant folio calculation.
-- **Deposit Payment Verification (`/requests`):** Review guest payment slips (KBZPay / bank transfer) and confirm bookings.
-- **Express QR Check-in (`/qr-checkin`):** Camera and manual token scanner for HMAC cryptographic check-in passes.
-- **Guest Services (`/services`):** Track housekeeping, room service, luggage requests, and maintenance work orders.
-- **Check-Out & Folio Billing (`/checkout`):** Itemized folio billing (room charges, incidentals, taxes) with one-click departure settlement.
+### 5.1 Reservations Registry (`/reservations`)
+- **Ordered Lifecycle Management:** Stays are categorized into 5 ordered operational groups:
+  1. `⚡ Waiting Approval`: Guest bookings with payment slips awaiting staff review.
+  2. `🛎️ Today's Check-Ins`: Strictly confirmed arrivals scheduled for today.
+  3. `✅ Already Checked In`: In-house guests with room keys assigned.
+  4. `📅 Upcoming Stays`: Future confirmed reservations.
+  5. `📋 Due & Past Stays`: Overdue departures, completed check-outs, and cancelled no-shows.
+- **Preference Formatting:** Cleaned guest preference JSON strings into human-readable tags (e.g. *High Floor • Feather-Free Pillows • Celebration Note*).
+- **Stat Chip Alignment:** Displays exact in-house suites occupied and confirmed suites reserved for complete parity with room rack inventory.
+
+### 5.2 Room Availability & Walk-In Desk (`/availability`)
+- **Available Suites First:** Available suites are dynamically sorted to the top of the inventory for quick front-desk walk-in assignment.
+- **Immediate Overdue Room Release:** When a guest fails to check in on their scheduled check-in date (`check_in_date < today`), their room is **immediately released to `AVAILABLE` at once** so front desk can sell it to other guests.
+- **Autonomous Self-Healing:** The room mapping engine detects and heals any database status drift (e.g., orphaned occupied flags without an active guest) on every fetch.
+
+### 5.3 Deposit Proof Verification (`/requests`)
+- **Direct Receipt Inspection:** High-resolution bank transfer and KBZPay transaction screenshots uploaded by guests are rendered directly in the staff verification modal.
+- **Dual Pipeline Visibility:** Online reservations awaiting payment verification are visible in both `/requests` and the `/reservations` Waiting Approval queue.
+- **Unverified Hold Isolation:** Pending unapproved reservations are strictly barred from the "QR Check-in Expected Today" scanner until staff verifies payment.
+- **Room Status Protection:** Approving a booking sets `booking_status: CONFIRMED` and `payment_status: PAID`. Rejecting a booking sets `booking_status: CANCELLED` and automatically releases the room back to `AVAILABLE`.
+
+### 5.4 Cross-Portal Real-Time Synchronization & Sound Alerts
+- **Instant Two-Way Broadcast:** Connected via Supabase Realtime broadcast channels (`stayflow-live-broadcast`).
+- **Zero-Refresh Updates:** When staff approves a payment slip, the customer's portal immediately updates to "Booking Approved" without page reload.
+- **Audio Chimes & Notification Bell:** Front desk staff and customers receive non-intrusive sound alerts and badge indicators on new reservations and service updates.
+
+### 5.5 Guest Services Concierge (`/services`)
+- **Three-Tier KanBan Dispatch:** `PENDING` $\rightarrow$ `IN_PROGRESS` (Assigned) $\rightarrow$ `COMPLETED`.
+- **Assignment & Move Workflow:** Clicking *"Assign & Move"* transitions requests directly to `IN_PROGRESS` with assigned staff UUIDs and timestamps, properly persisting to Supabase `room_service_requests`.
+- **Live Guest Coordination:** Connected with customer in-room service requests with delivery time estimates and incidentals billing.
+
+### 5.6 Express QR Check-In (`/qr-checkin`) & Fast Check-Out (`/checkout`)
+- **Camera & Token Scanner:** Validates HMAC-SHA256 digital passes and automatically marks rooms `OCCUPIED`.
+- **Instant Folio Settlement:** Single-click departure settlement releasing rooms back to `AVAILABLE`.
 
 ---
 

@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AppStoreProvider } from '@/store';
 import { ToastProvider } from '@/components/toast';
+import { NotificationProvider } from '@/context/NotificationContext';
 import { AuthProvider, ProtectedRoute, useAuth } from '@/auth';
 import { LoginPage } from '@/auth/LoginPage';
 import { AdminStoreProvider } from '@/admin/context/AdminStore';
@@ -32,10 +33,11 @@ function IndexRedirect() {
 export default function App() {
   return (
     <ToastProvider>
-      <AuthProvider>
-        <AppStoreProvider>
-          <AdminStoreProvider>
-            <BrowserRouter>
+      <NotificationProvider>
+        <AuthProvider>
+          <AppStoreProvider>
+            <AdminStoreProvider>
+              <BrowserRouter>
               <Routes>
                 {/* Public Authentication Route */}
                 <Route path="/login" element={<LoginPage />} />
@@ -150,6 +152,7 @@ export default function App() {
           </AdminStoreProvider>
         </AppStoreProvider>
       </AuthProvider>
-    </ToastProvider>
-  );
+    </NotificationProvider>
+  </ToastProvider>
+);
 }

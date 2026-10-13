@@ -3,7 +3,6 @@ import {
   Edit3,
   Plus,
   Search,
-  Wrench,
   Trash2,
   LayoutGrid,
   List,
@@ -12,7 +11,7 @@ import {
   Maximize2,
   X,
   CheckCircle2,
-  AlertTriangle,
+  CalendarCheck,
   Building,
   RefreshCw,
 } from 'lucide-react';
@@ -20,14 +19,13 @@ import { useAdminStore } from '../context/AdminStore';
 import { AdminHeader } from '../components/AdminHeader';
 import { RoomEditModal } from '../components/RoomEditModal';
 import { AddRoomModal } from '../components/AddRoomModal';
-import { MaintenanceModal } from '../components/MaintenanceModal';
 import type { Room } from '@/types';
 import { cn } from '@/lib/cn';
 import { useToast } from '@/components/toast';
 
 export function AdminRoomsPage() {
   const toast = useToast();
-  const { rooms, updateRoom, addRoom, toggleMaintenance, deleteRoom, refresh } = useAdminStore();
+  const { rooms, updateRoom, addRoom, deleteRoom, refresh } = useAdminStore();
 
   const [search, setSearch] = useState('');
   const [floorFilter, setFloorFilter] = useState<string>('ALL');
@@ -36,7 +34,6 @@ export function AdminRoomsPage() {
 
   // Modals state
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
-  const [maintenanceRoom, setMaintenanceRoom] = useState<Room | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
 
   // Stats calculation
@@ -46,8 +43,6 @@ export function AdminRoomsPage() {
       available: rooms.filter((r) => r.status === 'AVAILABLE').length,
       occupied: rooms.filter((r) => r.status === 'OCCUPIED').length,
       reserved: rooms.filter((r) => r.status === 'RESERVED').length,
-      cleaning: rooms.filter((r) => r.status === 'CLEANING').length,
-      maintenance: rooms.filter((r) => r.status === 'MAINTENANCE').length,
     };
   }, [rooms]);
 
@@ -136,13 +131,13 @@ export function AdminRoomsPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-3.5 shadow-xs">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-700">
-            <Wrench className="h-5 w-5" />
+        <div className="flex items-center gap-3 rounded-2xl border border-sky-500/20 bg-sky-500/5 p-3.5 shadow-xs">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-500/10 text-sky-700">
+            <CalendarCheck className="h-5 w-5" />
           </span>
           <div>
-            <p className="text-[11px] font-semibold text-amber-800 dark:text-amber-300 uppercase">In Maintenance</p>
-            <p className="text-xl font-extrabold text-amber-700 dark:text-amber-400">{stats.maintenance}</p>
+            <p className="text-[11px] font-semibold text-sky-800 dark:text-sky-300 uppercase">Reserved / Incoming</p>
+            <p className="text-xl font-extrabold text-sky-700 dark:text-sky-400">{stats.reserved}</p>
           </div>
         </div>
       </div>
@@ -157,8 +152,6 @@ export function AdminRoomsPage() {
               { id: 'AVAILABLE', label: 'Available', count: stats.available, dot: 'bg-emerald-500' },
               { id: 'OCCUPIED', label: 'Occupied', count: stats.occupied, dot: 'bg-[#0e2a4a]' },
               { id: 'RESERVED', label: 'Reserved', count: stats.reserved, dot: 'bg-sky-500' },
-              { id: 'CLEANING', label: 'Cleaning', count: stats.cleaning, dot: 'bg-amber-400' },
-              { id: 'MAINTENANCE', label: 'Maintenance', count: stats.maintenance, dot: 'bg-red-500' },
             ].map((tab) => {
               const isActive = statusFilter === tab.id;
               return (
@@ -272,7 +265,6 @@ export function AdminRoomsPage() {
           {filteredRooms.map((room) => {
             const isAvail = room.status === 'AVAILABLE';
             const isOccupied = room.status === 'OCCUPIED';
-            const isMaint = room.status === 'MAINTENANCE';
 
             return (
               <div
@@ -281,7 +273,7 @@ export function AdminRoomsPage() {
                   'group flex flex-col justify-between rounded-2xl border bg-surface-container-lowest p-5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md',
                   isAvail && 'border-outline-variant/40 hover:border-emerald-500/40',
                   isOccupied && 'border-primary/20 hover:border-primary/40',
-                  isMaint && 'border-amber-500/30 hover:border-amber-500/50 bg-amber-500/[0.02]',
+                  room.status === 'RESERVED' && 'border-sky-500/20 hover:border-sky-500/40',
                 )}
               >
                 <div>
@@ -307,7 +299,6 @@ export function AdminRoomsPage() {
                         isAvail && 'bg-emerald-500/10 text-emerald-700',
                         isOccupied && 'bg-primary/10 text-primary',
                         room.status === 'RESERVED' && 'bg-sky-500/10 text-sky-700',
-                        isMaint && 'bg-amber-500/10 text-amber-700',
                       )}
                     >
                       <span
@@ -316,7 +307,6 @@ export function AdminRoomsPage() {
                           isAvail && 'bg-emerald-500',
                           isOccupied && 'bg-primary',
                           room.status === 'RESERVED' && 'bg-sky-500',
-                          isMaint && 'bg-amber-500',
                         )}
                       />
                       {room.status}
@@ -389,14 +379,13 @@ export function AdminRoomsPage() {
                     </div>
                   )}
 
-                  {/* Maintenance Notice */}
-                  {isMaint && room.workOrder && (
-                    <div className="mt-3.5 rounded-xl border border-amber-500/20 bg-amber-500/10 p-2.5 text-body-xs text-amber-900 dark:text-amber-300">
-                      <p className="font-bold flex items-center gap-1">
-                        <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
-                        Lockout Reason:
-                      </p>
-                      <p className="text-[11px] mt-0.5">{room.workOrder}</p>
+                  {/* Reserved Notice */}
+                  {room.status === 'RESERVED' && room.guestName && (
+                    <div className="mt-3.5 rounded-xl border border-sky-500/20 bg-sky-500/5 p-2.5 text-body-xs text-sky-800 dark:text-sky-300">
+                      <p className="font-bold">Reserved Guest: {room.guestName}</p>
+                      {room.departsAt && (
+                        <p className="text-[11px] text-sky-700/80">{room.departsAt}</p>
+                      )}
                     </div>
                   )}
                 </div>
@@ -406,23 +395,10 @@ export function AdminRoomsPage() {
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => setMaintenanceRoom(room)}
-                      className={cn(
-                        'flex items-center gap-1 rounded-xl px-2.5 py-1 text-label-xs font-bold transition cursor-pointer',
-                        isMaint
-                          ? 'border border-emerald-500/30 bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20'
-                          : 'border border-amber-500/30 bg-amber-500/10 text-amber-800 hover:bg-amber-500/20',
-                      )}
-                    >
-                      <Wrench className="h-3 w-3" />
-                      {isMaint ? 'Release Lock' : 'Maint. Lock'}
-                    </button>
-                    <button
-                      type="button"
                       onClick={() => setEditingRoom(room)}
-                      className="rounded-xl border border-outline-variant/50 bg-surface-container-low px-2.5 py-1 text-label-xs font-semibold text-on-surface hover:bg-surface-container transition cursor-pointer"
+                      className="rounded-xl border border-outline-variant/50 bg-surface-container-low px-3 py-1.5 text-label-xs font-semibold text-on-surface hover:bg-surface-container transition cursor-pointer"
                     >
-                      Edit Suite
+                      Edit Suite Details
                     </button>
                   </div>
 
@@ -460,7 +436,6 @@ export function AdminRoomsPage() {
                 {filteredRooms.map((room) => {
                   const isAvail = room.status === 'AVAILABLE';
                   const isOccupied = room.status === 'OCCUPIED';
-                  const isMaint = room.status === 'MAINTENANCE';
 
                   return (
                     <tr key={room.id} className="transition hover:bg-surface-container-low/40">
@@ -483,7 +458,6 @@ export function AdminRoomsPage() {
                             isAvail && 'bg-emerald-500/10 text-emerald-700',
                             isOccupied && 'bg-primary/10 text-primary',
                             room.status === 'RESERVED' && 'bg-sky-500/10 text-sky-700',
-                            isMaint && 'bg-amber-500/10 text-amber-700',
                           )}
                         >
                           <span
@@ -492,7 +466,6 @@ export function AdminRoomsPage() {
                               isAvail && 'bg-emerald-500',
                               isOccupied && 'bg-primary',
                               room.status === 'RESERVED' && 'bg-sky-500',
-                              isMaint && 'bg-amber-500',
                             )}
                           />
                           {room.status}
@@ -503,9 +476,7 @@ export function AdminRoomsPage() {
                       </td>
                       <td className="py-3.5 px-4 text-label-xs text-on-surface-variant">
                         {room.guestName ? (
-                          <span className="font-semibold text-primary">{room.guestName}</span>
-                        ) : room.workOrder ? (
-                          <span className="font-semibold text-amber-700">{room.workOrder}</span>
+                          <span className={cn('font-semibold', isOccupied ? 'text-primary' : 'text-sky-700')}>{room.guestName}</span>
                         ) : (
                           <span className="text-on-surface-variant/40">—</span>
                         )}
@@ -519,14 +490,6 @@ export function AdminRoomsPage() {
                             title="Edit Suite Rates & Amenities"
                           >
                             <Edit3 className="h-4 w-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setMaintenanceRoom(room)}
-                            className="rounded-lg p-1.5 text-amber-700 hover:bg-amber-500/10 transition cursor-pointer"
-                            title="Toggle Maintenance Lockout"
-                          >
-                            <Wrench className="h-4 w-4" />
                           </button>
                           <button
                             type="button"
@@ -557,18 +520,6 @@ export function AdminRoomsPage() {
             updateRoom(id, updates);
             setEditingRoom(null);
             toast.success(`Suite details updated.`);
-          }}
-        />
-      )}
-
-      {maintenanceRoom && (
-        <MaintenanceModal
-          room={maintenanceRoom}
-          open={!!maintenanceRoom}
-          onClose={() => setMaintenanceRoom(null)}
-          onToggle={(roomId, workOrder) => {
-            toggleMaintenance(roomId, workOrder);
-            setMaintenanceRoom(null);
           }}
         />
       )}

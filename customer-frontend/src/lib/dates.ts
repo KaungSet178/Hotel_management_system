@@ -4,7 +4,6 @@ import {
   format,
   isValid,
   parseISO,
-  startOfToday,
 } from 'date-fns';
 
 /** Parse an ISO `YYYY-MM-DD` string to a Date (timezone-safe). */
@@ -16,8 +15,10 @@ export function toISODate(date: Date): string {
   return format(date, 'yyyy-MM-dd');
 }
 
+export const MYANMAR_TIMEZONE = 'Asia/Yangon';
+
 export function todayISO(): string {
-  return toISODate(new Date());
+  return new Intl.DateTimeFormat('en-CA', { timeZone: MYANMAR_TIMEZONE }).format(new Date());
 }
 
 export function addDaysISO(value: string, days: number): string {
@@ -53,7 +54,7 @@ export function formatRange(checkIn: string, checkOut: string): string {
   return `${formatDateShort(checkIn)} – ${formatDate(checkOut)}`;
 }
 
-/** Today + n days as ISO (used for demo seed + default search dates). */
+/** Today + n days as ISO (anchored to Myanmar hotel time Asia/Yangon). */
 export function todayPlus(days: number): string {
-  return toISODate(addDays(startOfToday(), days));
+  return addDaysISO(todayISO(), days);
 }

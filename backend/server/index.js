@@ -216,6 +216,8 @@ realtimeBus.on('booking:checked_out', (data) => broadcastEvent('booking_checked_
 realtimeBus.on('booking:cancelled', (data) => broadcastEvent('booking_cancelled', data));
 realtimeBus.on('booking:paid', (data) => broadcastEvent('booking_paid', data));
 realtimeBus.on('booking:updated', (data) => broadcastEvent('booking_updated', data));
+realtimeBus.on('booking:approved', (data) => broadcastEvent('booking_approved', data));
+realtimeBus.on('booking:rejected', (data) => broadcastEvent('booking_rejected', data));
 realtimeBus.on('room:updated', (data) => broadcastEvent('room_updated', data));
 realtimeBus.on('service_request:created', (data) => broadcastEvent('service_request_created', data));
 realtimeBus.on('service_request:updated', (data) => broadcastEvent('service_request_updated', data));
@@ -742,7 +744,7 @@ app.post('/api/service-requests', requireAuth, validateRequest(createServiceRequ
 app.patch('/api/service-requests/:id', requireAuth, requireRole('HOUSEKEEPING', 'RECEPTIONIST', 'ADMIN'), validateRequest(updateServiceRequestStatusSchema), async (req, res, next) => {
   try {
     const { status, assigned_to } = req.body;
-    const updated = await updateServiceRequestStatus(req.params.id, status, assigned_to || req.user.full_name);
+    const updated = await updateServiceRequestStatus(req.params.id, status, assigned_to || req.user.id);
     res.json({ success: true, data: updated });
   } catch (err) {
     next(err);

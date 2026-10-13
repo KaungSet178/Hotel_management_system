@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -27,6 +27,7 @@ import { bookings, serviceRequests } from '@/services';
 import { toUserMessage } from '@/services/errors';
 import { formatDate } from '@/lib/dates';
 import { cn } from '@/lib/cn';
+import { broadcastLiveEvent } from '@/lib/broadcast';
 import type { ServiceRequest, ServiceRequestCategory, ServiceRequestStatus } from '@/types';
 
 const CATEGORIES: { id: ServiceRequestCategory; label: string; icon: typeof Droplets }[] = [
@@ -81,6 +82,30 @@ function ServicesView({ reference }: { reference: string }) {
     [reference, dbVersion],
   );
 
+  // Live real-time update synchronization & auto-poll while requests are active
+  useEffect(() => {
+    const handleUpdate = () => {
+      requestsQuery.reload();
+    };
+
+    window.addEventListener('stayflow:service-request-updated', handleUpdate);
+
+    const interval = setInterval(() => {
+      const activeList = requestsQuery.data || [];
+      const hasActive = activeList.length > 0 && activeList.some(
+        (r) => r.status === 'pending' || r.status === 'in_progress' || r.status === 'assigned' || r.status === 'in_transit'
+      );
+      if (hasActive) {
+        requestsQuery.reload();
+      }
+    }, 3500);
+
+    return () => {
+      window.removeEventListener('stayflow:service-request-updated', handleUpdate);
+      clearInterval(interval);
+    };
+  }, [requestsQuery]);
+
   const [category, setCategory] = useState<ServiceRequestCategory>('extra_towels');
   const [details, setDetails] = useState('');
   const [deliveryTime, setDeliveryTime] = useState(DELIVERY[0]);
@@ -108,7 +133,7 @@ function ServicesView({ reference }: { reference: string }) {
   }
 
   const booking = bookingQuery.data;
-  const eligible = booking.status === 'checked_in';
+  const eligible = booking.status === 'checked_in' || booking.status === 'confirmed';
 
   const submit = async () => {
     if (!details.trim()) {
@@ -125,6 +150,14 @@ function ServicesView({ reference }: { reference: string }) {
         details: details.trim(),
         deliveryTime,
       });
+
+      broadcastLiveEvent('SERVICE_REQUEST_CREATED', {
+        roomNumber: booking?.roomNumber || 'Room',
+        category: label,
+        details: details.trim(),
+        reference,
+      });
+
       setDetails('');
       setDeliveryTime(DELIVERY[0]);
       toast.success('Request received', 'Our team has been notified and will be with you shortly.');

@@ -2,30 +2,26 @@ import { useMemo, useState } from 'react';
 import {
   AlertTriangle,
   BadgeCheck,
-  CheckCheck,
   ChevronRight,
   Clock,
   Download,
   FileText,
-  KeyRound,
   Link2,
   Maximize2,
   Printer,
   RefreshCw,
   SendHorizontal,
   ShieldCheck,
-  UserCheck,
   UserX,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
-import { mmk } from '@/lib/format';
+import { mmk, formatMyanmarFullDate } from '@/lib/format';
 import { downloadCsv, downloadImage } from '@/lib/download';
 import { printSlip } from '@/lib/print';
 import { useAppStore } from '@/store';
 import { useToast } from '@/components/toast';
 import {
   Button,
-  CountBadge,
   Field,
   Modal,
   Panel,
@@ -50,15 +46,38 @@ function TierChip({ tier }: { tier: BookingRequest['tier'] }) {
 }
 
 function SlipBlock({ req }: { req: BookingRequest }) {
+  const imageSrc = req.slip?.image || req.slip?.receiptUrl || req.slip?.dataUrl;
   return (
-    <div className="rounded-xl border border-[#0e1c32]/15 bg-primary-container px-4 py-3 text-[#ecf1ff]">
+    <div className="group rounded-xl border border-[#0e1c32]/15 bg-primary-container px-4 py-3 text-[#ecf1ff] transition-all hover:border-[#89f5e7]/50 hover:bg-[#142642]">
       <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Link2 className="h-4 w-4 text-[#89f5e7]" />
-          <span className="text-label-md font-semibold">KBZPAY</span>
-          <span className="text-label-sm text-white/60">{req.slip?.txnRef}</span>
+        <div className="flex items-center gap-3 min-w-0">
+          {imageSrc ? (
+            <img
+              src={imageSrc}
+              alt="Payment receipt thumbnail"
+              className="h-10 w-10 shrink-0 rounded-lg border border-white/20 object-cover bg-white"
+            />
+          ) : (
+            <Link2 className="h-4 w-4 text-[#89f5e7] shrink-0" />
+          )}
+          <div className="min-w-0 text-left">
+            <div className="flex items-center gap-2">
+              <span className="text-label-md font-semibold text-[#89f5e7]">
+                {req.slip?.txnRef?.includes('WAVE') ? 'WAVEPAY' : req.slip?.txnRef?.includes('CB') ? 'CB PAY' : req.channel || 'KBZPAY'}
+              </span>
+              <span className="truncate text-label-xs text-white/70">{req.slip?.txnRef}</span>
+            </div>
+            {req.slip?.fileName && (
+              <p className="truncate text-label-xs text-white/50">{req.slip.fileName}</p>
+            )}
+          </div>
         </div>
-        <span className="text-label-md font-bold">{mmk(req.amount)}</span>
+        <div className="flex items-center gap-3 shrink-0">
+          <span className="text-label-md font-bold">{mmk(req.amount)}</span>
+          <span className="rounded-lg bg-white/10 px-2.5 py-1 text-label-xs font-medium text-white/90 group-hover:bg-[#89f5e7] group-hover:text-[#0e1c32]">
+            View Slip ↗
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -69,8 +88,7 @@ function QueueRow({
   active,
   onToggle,
   onVerify,
-  onConfirm,
-  onResolve,
+  onReject,
   onRejectInfo,
   onViewSlip,
   onRequestProof,
@@ -79,8 +97,7 @@ function QueueRow({
   active: boolean;
   onToggle: () => void;
   onVerify: () => void;
-  onConfirm: () => void;
-  onResolve: () => void;
+  onReject: () => void;
   onRejectInfo: () => void;
   onViewSlip: () => void;
   onRequestProof: () => void;
@@ -150,55 +167,71 @@ function QueueRow({
             {req.note}
           </p>
 
-          {req.state === 'PROOF_UPLOADED' && req.slip && (
+          {req.slip && (
             <button type="button" onClick={onViewSlip} className="mt-3 block w-full">
               <SlipBlock req={req} />
             </button>
           )}
 
           <div className="mt-4 flex flex-wrap items-center gap-2">
+            {req.slip && (
+              <Button variant="outline" size="sm" onClick={onViewSlip}>
+                <FileText className="h-3.5 w-3.5" />
+                View Bank Slip
+              </Button>
+            )}
+
             {req.state === 'PROOF_UPLOADED' && (
               <>
                 <Button variant="ghost" size="sm" onClick={onRequestProof}>
                   <SendHorizontal className="h-3.5 w-3.5" />
-                  Request Proof
+                  Request Re-upload
                 </Button>
-                <Button variant="outline" size="sm" onClick={onViewSlip}>
-                  <FileText className="h-3.5 w-3.5" />
-                  View Bank Slip
-                </Button>
-                <Button size="sm" className="ml-auto" onClick={onVerify}>
-                  <BadgeCheck className="h-3.5 w-3.5" />
-                  Mark as Verified
-                </Button>
+
+                <div className="ml-auto flex items-center gap-2">
+                  <Button variant="danger" size="sm" onClick={onReject}>
+                    <UserX className="h-3.5 w-3.5" />
+                    Reject
+                  </Button>
+                  <Button size="sm" onClick={onVerify}>
+                    <BadgeCheck className="h-3.5 w-3.5" />
+                    Mark as Verified
+                  </Button>
+                </div>
               </>
             )}
 
             {req.state === 'AWAITING_GATEWAY' && (
-              <Button size="sm" className="ml-auto" onClick={onVerify}>
-                <BadgeCheck className="h-3.5 w-3.5" />
-                Re-verify Payment
-              </Button>
-            )}
-
-            {req.state === 'PAY_AT_HOTEL' && (
-              <Button size="sm" className="ml-auto" onClick={onConfirm}>
-                <UserCheck className="h-3.5 w-3.5" />
-                Confirm & Auto Check-in
-              </Button>
-            )}
-
-            {req.state === 'ROOM_CONFLICT' && (
-              <Button size="sm" className="ml-auto" onClick={onResolve}>
-                Resolve Conflict
-              </Button>
+              <div className="ml-auto flex items-center gap-2">
+                <Button variant="danger" size="sm" onClick={onReject}>
+                  <UserX className="h-3.5 w-3.5" />
+                  Reject
+                </Button>
+                <Button size="sm" onClick={onVerify}>
+                  <BadgeCheck className="h-3.5 w-3.5" />
+                  Re-verify Payment
+                </Button>
+              </div>
             )}
 
             {req.state === 'REJECTED' && (
-              <Button variant="danger" size="sm" className="ml-auto" onClick={onRejectInfo}>
-                <UserX className="h-3.5 w-3.5" />
-                View Rejection Record
-              </Button>
+              <div className="ml-auto flex items-center gap-2">
+                <span className="rounded-full bg-rose-500/10 border border-rose-500/30 px-2.5 py-0.5 text-label-xs font-semibold text-rose-700">
+                  Declined
+                </span>
+                <Button variant="outline" size="sm" onClick={onRejectInfo}>
+                  <UserX className="h-3.5 w-3.5" />
+                  View Rejection Record
+                </Button>
+              </div>
+            )}
+
+            {req.state === 'CONFIRMED' && (
+              <div className="ml-auto flex items-center gap-2">
+                <span className="rounded-full bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-0.5 text-label-xs font-semibold text-emerald-700">
+                  Verified & Confirmed
+                </span>
+              </div>
             )}
           </div>
         </div>
@@ -215,7 +248,7 @@ function SlipModal({ req, onClose }: { req: BookingRequest | null; onClose: () =
     return null;
   }
 
-  const imageSrc = slip.image || slip.receiptUrl;
+  const imageSrc = slip.image || slip.receiptUrl || slip.dataUrl;
   const safeTxnRef = slip.txnRef.replace(/[^a-zA-Z0-9_-]+/g, '-');
   const extension = imageSrc?.startsWith('data:image/png') ? 'png' : 'jpg';
 
@@ -289,10 +322,16 @@ function SlipModal({ req, onClose }: { req: BookingRequest | null; onClose: () =
             <p className="text-label-sm text-on-surface-variant">Recipient</p>
             <p className="mt-0.5 font-medium text-on-surface">{slip.recipient}</p>
           </div>
-          <div className="sm:col-span-2">
+          <div>
             <p className="text-label-sm text-on-surface-variant">Timestamp</p>
             <p className="mt-0.5 font-medium text-on-surface">{slip.timestamp}</p>
           </div>
+          {slip.fileName && (
+            <div>
+              <p className="text-label-sm text-on-surface-variant">Attached File</p>
+              <p className="mt-0.5 font-mono text-xs font-medium text-on-surface truncate">{slip.fileName}</p>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -355,8 +394,8 @@ function VerifyModal({
         <div className="space-y-2">
           {(
             [
-              { id: 'trusted', title: 'Trusted source review', desc: 'Senior desk verification of the KBZPay callback' },
-              { id: 'gateway', title: 'Raw gateway data', desc: 'Match txn_ref cross-checked against the KBZPay payload' },
+              { id: 'trusted', title: 'Trusted source review', desc: 'Senior desk verification of the payment callback / slip' },
+              { id: 'gateway', title: 'Raw gateway data', desc: 'Match txn_ref cross-checked against the payment transaction payload' },
             ] as const
           ).map((opt) => (
             <button
@@ -389,7 +428,7 @@ function VerifyModal({
         <Field label="Internal note (optional)">
           <TextArea
             rows={2}
-            placeholder="e.g. Callback received, KBZ reference confirmed"
+            placeholder="e.g. Callback received, transaction reference confirmed"
             value={note}
             onChange={(e) => setNote(e.target.value)}
           />
@@ -409,102 +448,103 @@ function VerifyModal({
   );
 }
 
-function ConfirmStayModal({
+/**
+ * Interactive Modal for rejecting an active booking request
+ */
+function RejectActionModal({
   req,
   onClose,
-  onConfirm,
+  onConfirmReject,
 }: {
   req: BookingRequest | null;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirmReject: (ref: string, reason: string) => void;
 }) {
-  if (!req) return null;
-  return (
-    <Modal open={req !== null} onClose={onClose} title="Confirm & Auto Check-in">
-      <div className="space-y-4">
-        <div className="rounded-xl bg-secondary-container/50 px-4 py-3">
-          <p className="flex items-center gap-2 text-body-md font-semibold text-on-secondary-container">
-            <UserCheck className="h-4 w-4" />
-            {req.guestName}
-          </p>
-          <p className="mt-1 text-body-sm text-on-secondary-container/80">
-            {req.room} · {req.stay} · {mmk(req.amount)}
-          </p>
-        </div>
-        <p className="text-body-md text-on-surface-variant">
-          Guest will be auto checked-in on arrival and the room released from the reservation queue.
-        </p>
-        <div className="flex items-center justify-end gap-2">
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button variant="secondary" onClick={onConfirm}>
-            Confirm & Auto Check-in
-          </Button>
-        </div>
-      </div>
-    </Modal>
-  );
-}
+  const [presetReason, setPresetReason] = useState('Payment slip unreadable or blurry');
+  const [customNote, setCustomNote] = useState('');
 
-function ResolveModal({
-  req,
-  onClose,
-  onResolve,
-}: {
-  req: BookingRequest | null;
-  onClose: () => void;
-  onResolve: (choice: string) => void;
-}) {
-  const [choice, setChoice] = useState('414');
   if (!req) return null;
+
+  const REASONS = [
+    'Payment slip unreadable or blurry',
+    'Transfer amount does not match booking total',
+    'Invalid or duplicate transaction reference',
+    'Sender account mismatch / unverified payer',
+    'Slip timestamp expired or invalid',
+    'Room unavailable / Overbooking',
+    'Other reason (see note)',
+  ];
+
+  const handleConfirm = () => {
+    const finalReason = customNote.trim()
+      ? `${presetReason}: ${customNote.trim()}`
+      : presetReason;
+    onConfirmReject(req.ref, finalReason);
+  };
+
   return (
-    <Modal open={req !== null} onClose={onClose} title="Resolve Room Conflict">
+    <Modal open={req !== null} onClose={onClose} title={`Reject Booking ${req.ref}`} tone="danger">
       <div className="space-y-4">
-        <div className="flex items-start gap-2 rounded-xl bg-tertiary-fixed px-4 py-3">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-on-tertiary-fixed-variant" />
-          <p className="text-body-md text-on-tertiary-fixed-variant">
-            {req.room} is occupied for overlapping dates ({req.stay}).
-          </p>
+        <div className="flex items-start gap-3 rounded-xl bg-rose-500/10 border border-rose-500/20 p-3.5 text-rose-900 dark:text-rose-200">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
+          <div className="text-body-sm">
+            <p className="font-semibold">Confirm Rejection</p>
+            <p className="mt-0.5 text-rose-800/90 dark:text-rose-300">
+              Rejecting this request will mark the booking as cancelled and release any tentative room holds. The guest will receive an immediate notification.
+            </p>
+          </div>
         </div>
-        {(
-          [
-            { id: '414', title: 'Upgrade to Suite 414', desc: 'Executive Ocean Panorama · +180,000 MMK (guest approved)' },
-            { id: '304', title: 'Move to Room 304', desc: 'Deluxe Azure Suite · respect original room type' },
-          ] as const
-        ).map((opt) => (
-          <button
-            key={opt.id}
-            type="button"
-            onClick={() => setChoice(opt.id)}
-            className={cn(
-              'flex w-full items-start gap-3 rounded-lg border px-3 py-2.5 text-left transition',
-              choice === opt.id
-                ? 'border-[#0e1c32] bg-surface-container-low'
-                : 'border-outline-variant/60 bg-surface-container-lowest',
-            )}
+
+        <div className="rounded-xl border border-outline-variant/50 bg-surface-container-low/50 p-3 text-body-sm">
+          <div className="grid grid-cols-2 gap-2 text-on-surface">
+            <div>
+              <span className="text-label-xs text-on-surface-variant block">Guest</span>
+              <span className="font-semibold">{req.guestName}</span>
+            </div>
+            <div>
+              <span className="text-label-xs text-on-surface-variant block">Amount</span>
+              <span className="font-bold">{mmk(req.amount)}</span>
+            </div>
+            <div>
+              <span className="text-label-xs text-on-surface-variant block">Stay</span>
+              <span>{req.stay}</span>
+            </div>
+            <div>
+              <span className="text-label-xs text-on-surface-variant block">Channel</span>
+              <span>{req.channel}</span>
+            </div>
+          </div>
+        </div>
+
+        <Field label="Rejection Reason">
+          <SelectInput
+            value={presetReason}
+            onChange={(e) => setPresetReason(e.target.value)}
           >
-            <span
-              className={cn(
-                'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
-                choice === opt.id ? 'border-[#0e1c32]' : 'border-outline',
-              )}
-            >
-              {choice === opt.id && <span className="h-2 w-2 rounded-full bg-[#0e1c32]" />}
-            </span>
-            <span>
-              <span className="block text-label-md font-medium text-on-surface">{opt.title}</span>
-              <span className="block text-body-sm text-on-surface-variant">{opt.desc}</span>
-            </span>
-          </button>
-        ))}
-        <div className="flex items-center justify-end gap-2">
+            {REASONS.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </SelectInput>
+        </Field>
+
+        <Field label="Additional Staff Note (Optional)">
+          <TextArea
+            rows={2}
+            value={customNote}
+            onChange={(e) => setCustomNote(e.target.value)}
+            placeholder="Add specific notes for audit records and customer notification..."
+          />
+        </Field>
+
+        <div className="flex items-center justify-end gap-2 pt-2 border-t border-outline-variant/40">
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={() => onResolve(choice)}>
-            <KeyRound className="h-4 w-4" />
-            Assign Room {choice}
+          <Button variant="danger" onClick={handleConfirm}>
+            <UserX className="h-4 w-4" />
+            Confirm Rejection
           </Button>
         </div>
       </div>
@@ -512,7 +552,10 @@ function ResolveModal({
   );
 }
 
-function RejectModal({ req, onClose }: { req: BookingRequest | null; onClose: () => void }) {
+/**
+ * Read-only modal displaying historical rejection details
+ */
+function RejectRecordModal({ req, onClose }: { req: BookingRequest | null; onClose: () => void }) {
   if (!req) return null;
   return (
     <Modal open={req !== null} onClose={onClose} title="Rejection Record" tone="danger">
@@ -520,23 +563,31 @@ function RejectModal({ req, onClose }: { req: BookingRequest | null; onClose: ()
         <div className="flex items-start gap-2 rounded-xl bg-error-container px-4 py-3">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-on-error-container" />
           <div>
-            <p className="text-label-md font-semibold text-on-error-container">Policy breach</p>
+            <p className="text-label-md font-semibold text-on-error-container">Booking Declined</p>
             <p className="mt-0.5 text-body-sm text-on-error-container">
-              Pay-at-hotel is not eligible more than 24h before arrival.
+              This reservation was declined by front desk staff.
             </p>
           </div>
         </div>
         <div className="grid grid-cols-1 gap-2 text-body-sm sm:grid-cols-2">
           <div>
-            <p className="text-label-sm text-on-surface-variant">Ticket</p>
+            <p className="text-label-sm text-on-surface-variant">Ticket / Ref</p>
             <p className="mt-0.5 font-medium text-on-surface">{req.ref}</p>
           </div>
           <div>
-            <p className="text-label-sm text-on-surface-variant">Rejected at</p>
-            <p className="mt-0.5 font-medium text-on-surface">18 Oct 2025, 13:41 MMT</p>
+            <p className="text-label-sm text-on-surface-variant">Guest</p>
+            <p className="mt-0.5 font-medium text-on-surface">{req.guestName}</p>
+          </div>
+          <div>
+            <p className="text-label-sm text-on-surface-variant">Stay</p>
+            <p className="mt-0.5 font-medium text-on-surface">{req.stay}</p>
+          </div>
+          <div>
+            <p className="text-label-sm text-on-surface-variant">Amount</p>
+            <p className="mt-0.5 font-medium text-on-surface">{mmk(req.amount)}</p>
           </div>
           <div className="sm:col-span-2">
-            <p className="text-label-sm text-on-surface-variant">Reason</p>
+            <p className="text-label-sm text-on-surface-variant">Recorded Reason</p>
             <p className="mt-0.5 font-medium text-on-surface">{req.note}</p>
           </div>
         </div>
@@ -545,51 +596,57 @@ function RejectModal({ req, onClose }: { req: BookingRequest | null; onClose: ()
   );
 }
 
-const AUDIT_ROWS = [
-  { txn: 'KBZ:Bank_QR.Deposit_Payment', amount: 759000, status: 'Amount matched' },
-  { txn: 'KBZ:Bank_QR.Deposit_Payment', amount: 185000, status: 'Amount matched' },
-  { txn: 'KBZ:Wallet.SelfService', amount: 1020000, status: 'Awaiting settlement' },
-  { txn: 'KBZ:Bank_QR.Deposit_Payment', amount: 655000, status: 'Amount matched' },
-] as const;
+export type QueueFilter = 'All' | 'Proof Uploaded' | 'Rejected';
 
 export function BookingRequestsPage() {
-  const { requests, confirmRequest, setRequestState, refresh } = useAppStore();
+  const { requests, confirmRequest, rejectRequest, setRequestState, refresh } = useAppStore();
   const toast = useToast();
 
-  const [activeRef, setActiveRef] = useState<string | null>('#SF-2025-9510');
-  const [filter, setFilter] = useState('PROOF over');
+  const [activeRef, setActiveRef] = useState<string | null>(null);
+  const [filter, setFilter] = useState<QueueFilter>('All');
   const [query, setQuery] = useState('');
   const [slipRef, setSlipRef] = useState<string | null>(null);
   const [verifyRef, setVerifyRef] = useState<string | null>(null);
-  const [confirmRef, setConfirmRef] = useState<string | null>(null);
-  const [conflictRef, setConflictRef] = useState<string | null>(null);
-  const [rejectRef, setRejectRef] = useState<string | null>(null);
+  const [rejectActionRef, setRejectActionRef] = useState<string | null>(null);
+  const [rejectRecordRef, setRejectRecordRef] = useState<string | null>(null);
 
   const byRef = (ref: string | null): BookingRequest | null =>
     requests.find((r) => r.ref === ref) ?? null;
 
+  // Exact 3 filters requested by the user: All, Proof Uploaded, Rejected
+  const counts = useMemo(() => {
+    return {
+      all: requests.length,
+      proofUploaded: requests.filter((r) => r.state === 'PROOF_UPLOADED').length,
+      rejected: requests.filter((r) => r.state === 'REJECTED').length,
+    };
+  }, [requests]);
+
   const queue = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return requests.filter((r) => {
+    const filtered = requests.filter((r) => {
       if (q && !`${r.guestName} ${r.ref} ${r.room}`.toLowerCase().includes(q)) return false;
       switch (filter) {
-        case 'PROOF over':
-          return r.state !== 'CONFIRMED';
         case 'Proof Uploaded':
           return r.state === 'PROOF_UPLOADED';
-        case 'Pay at Hotel':
-          return r.state === 'PAY_AT_HOTEL';
-        case 'Conflicts':
-          return r.state === 'ROOM_CONFLICT';
         case 'Rejected':
           return r.state === 'REJECTED';
+        case 'All':
         default:
           return true;
       }
     });
-  }, [requests, filter, query]);
 
-  const verified = requests.filter((r) => r.state === 'CONFIRMED');
+    return [...filtered].sort((a, b) => {
+      const getReqScore = (r: BookingRequest): number => {
+        if (r.state === 'PROOF_UPLOADED') return 0; // Uploaded slip at the very top
+        if (r.state === 'AWAITING_GATEWAY') return 1;
+        if (r.state === 'CONFIRMED') return 2;
+        return 3; // REJECTED at the bottom
+      };
+      return getReqScore(a) - getReqScore(b);
+    });
+  }, [requests, filter, query]);
 
   const handleVerify = (): void => {
     if (verifyRef) {
@@ -599,20 +656,10 @@ export function BookingRequestsPage() {
     }
   };
 
-  const handleConfirmStay = (): void => {
-    if (confirmRef) {
-      confirmRequest(confirmRef);
-      toast.success(`${byRef(confirmRef)?.guestName} confirmed · auto check-in set`);
-      setConfirmRef(null);
-    }
-  };
-
-  const handleResolve = (choice: string): void => {
-    if (conflictRef) {
-      toast.success(`Room conflict resolved · ${byRef(conflictRef)?.guestName} assigned ${choice}`);
-      confirmRequest(conflictRef);
-      setConflictRef(null);
-    }
+  const handleConfirmReject = (ref: string, reason: string): void => {
+    rejectRequest(ref, reason);
+    toast.warning(`Reservation ${ref} rejected · ${reason}`);
+    setRejectActionRef(null);
   };
 
   const handleRequestProof = (ref: string): void => {
@@ -639,21 +686,12 @@ export function BookingRequestsPage() {
     toast.success(`Exporting ${queue.length} request(s) to CSV`);
   };
 
-  const handleAuditCsv = (): void => {
-    downloadCsv(
-      'reconciliation-audit.csv',
-      ['Transaction', 'Amount', 'Status'],
-      AUDIT_ROWS.map((row) => [row.txn, row.amount, row.status]),
-    );
-    toast.success('Reconciliation audit exported to CSV');
-  };
-
   return (
     <div className="space-y-6">
       <SectionTitle
         eyebrow="StayFlow · Front Desk"
         title="Booking Requests & Payment Verification"
-        description="Deposits queue with KBZPay slip verification, pay-at-hotel confirmation and room-conflict resolution."
+        description="Payment verification queue for online bookings with digital wallet & bank transfer slip verification."
         action={
           <div className="flex items-center gap-2">
             <Button
@@ -675,139 +713,112 @@ export function BookingRequestsPage() {
         }
       />
 
-      <div className="flex flex-col gap-6 xl:flex-row xl:items-start">
-        <div className="min-w-0 flex-1 space-y-4">
-          <Panel
-            title="Booking Request Queue"
-            subtitle="Sunday, 20 October 2025"
-            bodyClassName="space-y-3"
-          >
-            <div className="flex flex-wrap items-center gap-2">
-              <TextInput
-                placeholder="Search by guest, ref or room…"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                className="h-9 max-w-xs flex-1 rounded-full"
-              />
-              <SelectInput
-                value={filter}
-                onChange={(e) => setFilter(e.target.value)}
-                className="h-9 w-auto rounded-full pr-8"
-              >
-                <option>All requests</option>
-                <option>Proof Uploaded</option>
-                <option>Pay at Hotel</option>
-                <option>Conflicts</option>
-                <option>Rejected</option>
-              </SelectInput>
-              <CountBadge count={queue.length} className="ml-auto" />
-            </div>
-
-            <ul className="space-y-2.5">
-              {queue.map((req) => (
-                <QueueRow
-                  key={req.ref}
-                  req={req}
-                  active={activeRef === req.ref}
-                  onToggle={() => setActiveRef((prev) => (prev === req.ref ? null : req.ref))}
-                  onVerify={() => setVerifyRef(req.ref)}
-                  onConfirm={() => setConfirmRef(req.ref)}
-                  onResolve={() => setConflictRef(req.ref)}
-                  onRejectInfo={() => setRejectRef(req.ref)}
-                  onViewSlip={() => setSlipRef(req.ref)}
-                  onRequestProof={() => handleRequestProof(req.ref)}
-                />
-              ))}
-            </ul>
-          </Panel>
-        </div>
-
-        <div className="w-full shrink-0 space-y-4 xl:w-[360px]">
-          <Panel
-            title="Deposits Verified"
-            subtitle={`${verified.length} payment(s) cleared today`}
-            bodyClassName="space-y-3"
-          >
-            {verified.map((r) => (
-              <div
-                key={r.ref}
-                className="rounded-xl border border-secondary/20 bg-secondary-container/25 px-3.5 py-3"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-label-md font-semibold text-[#0e1c32]">{r.ref}</span>
-                  <StatusChip status="CONFIRMED" />
-                </div>
-                <p className="mt-1 text-body-md font-semibold text-on-surface">{r.guestName}</p>
-                <p className="text-body-sm text-on-surface-variant">
-                  {r.room} · {r.stay} · {r.nights}N
-                </p>
-                <div className="mt-2 flex items-center justify-between">
-                  <span className="text-label-md font-bold text-on-surface">{mmk(r.amount)}</span>
-                  <span className="flex items-center gap-1 text-label-sm text-on-secondary-container">
-                    <KeyRound className="h-3.5 w-3.5" />
-                    QR pass dispatched
-                  </span>
-                </div>
-              </div>
-            ))}
-          </Panel>
-
-          <Panel
-            title="Reconciliation Audit Trail"
-            action={
-              <span className="text-label-sm font-medium text-on-surface-variant">
-                Reconciled {AUDIT_ROWS.filter((r) => r.status !== 'Awaiting settlement').length} / {AUDIT_ROWS.length}
-              </span>
-            }
-            bodyClassName="p-0"
-          >
-            <table className="w-full text-left text-body-sm">
-              <thead>
-                <tr className="border-b border-outline-variant/40 text-label-sm text-on-surface-variant">
-                  <th className="px-4 py-2.5 font-medium">Transaction</th>
-                  <th className="px-2 py-2.5 font-medium">Amount</th>
-                  <th className="px-3 py-2.5 font-medium">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-outline-variant/30">
-                {AUDIT_ROWS.map((row) => (
-                  <tr key={`${row.txn}-${row.amount}`} className="align-top">
-                    <td className="px-4 py-2.5 font-mono text-label-sm text-on-surface">{row.txn}</td>
-                    <td className="px-2 py-2.5 font-semibold text-on-surface">{mmk(row.amount)}</td>
-                    <td className="px-3 py-2.5">
+      <div className="space-y-4">
+        <Panel
+          title="Booking Request Queue"
+          subtitle={formatMyanmarFullDate()}
+          bodyClassName="space-y-4"
+        >
+            {/* Filter Tabs: All, Proof Uploaded, Rejected */}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-outline-variant/40 pb-3">
+              <div className="flex flex-wrap items-center gap-1.5">
+                {(
+                  [
+                    { id: 'All', label: 'All Requests', count: counts.all },
+                    { id: 'Proof Uploaded', label: 'Proof Uploaded', count: counts.proofUploaded },
+                    { id: 'Rejected', label: 'Rejected', count: counts.rejected },
+                  ] as const
+                ).map((tab) => {
+                  const active = filter === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setFilter(tab.id)}
+                      className={cn(
+                        'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-label-sm font-semibold transition cursor-pointer',
+                        active
+                          ? 'bg-[#0e1c32] text-white shadow-xs'
+                          : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container hover:text-on-surface',
+                      )}
+                    >
+                      <span>{tab.label}</span>
                       <span
                         className={cn(
-                          'inline-flex items-center gap-1 text-label-sm',
-                          row.status === 'Amount matched' ? 'text-secondary' : 'text-[#b45309]',
+                          'rounded-full px-1.5 py-0.2 text-[11px] font-bold',
+                          active
+                            ? 'bg-white/20 text-white'
+                            : 'bg-outline-variant/50 text-on-surface-variant',
                         )}
                       >
-                        {row.status === 'Amount matched' ? (
-                          <CheckCheck className="h-3.5 w-3.5" />
-                        ) : (
-                          <Clock className="h-3.5 w-3.5" />
-                        )}
-                        {row.status}
+                        {tab.count}
                       </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <div className="border-t border-outline-variant/40 px-4 py-3">
-              <Button variant="ghost" size="sm" onClick={handleAuditCsv}>
-                <Download className="h-3.5 w-3.5" />
-                Download CSV
-              </Button>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <TextInput
+                  placeholder="Search guest, ref or room…"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  className="h-9 w-52 sm:w-64 rounded-full"
+                />
+                <SelectInput
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value as QueueFilter)}
+                  className="h-9 w-auto rounded-full pr-8 text-label-sm"
+                >
+                  <option value="All">All ({counts.all})</option>
+                  <option value="Proof Uploaded">Proof Uploaded ({counts.proofUploaded})</option>
+                  <option value="Rejected">Rejected ({counts.rejected})</option>
+                </SelectInput>
+              </div>
             </div>
+
+            {queue.length === 0 ? (
+              <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-outline-variant/60 py-12 text-center">
+                <ShieldCheck className="h-10 w-10 text-on-surface-variant/40" />
+                <p className="mt-2 text-label-md font-semibold text-on-surface">
+                  No requests in this view
+                </p>
+                <p className="text-body-sm text-on-surface-variant">
+                  {filter === 'Proof Uploaded'
+                    ? 'All payment slips have been verified!'
+                    : filter === 'Rejected'
+                    ? 'There are no rejected bookings.'
+                    : 'The request queue is empty.'}
+                </p>
+              </div>
+            ) : (
+              <ul className="space-y-2.5">
+                {queue.map((req) => (
+                  <QueueRow
+                    key={req.ref}
+                    req={req}
+                    active={activeRef === req.ref}
+                    onToggle={() => setActiveRef((prev) => (prev === req.ref ? null : req.ref))}
+                    onVerify={() => setVerifyRef(req.ref)}
+                    onReject={() => setRejectActionRef(req.ref)}
+                    onRejectInfo={() => setRejectRecordRef(req.ref)}
+                    onViewSlip={() => setSlipRef(req.ref)}
+                    onRequestProof={() => handleRequestProof(req.ref)}
+                  />
+                ))}
+              </ul>
+            )}
           </Panel>
         </div>
-      </div>
 
       <SlipModal req={byRef(slipRef)} onClose={() => setSlipRef(null)} />
       <VerifyModal req={byRef(verifyRef)} onClose={() => setVerifyRef(null)} onConfirm={handleVerify} />
-      <ConfirmStayModal req={byRef(confirmRef)} onClose={() => setConfirmRef(null)} onConfirm={handleConfirmStay} />
-      <ResolveModal req={byRef(conflictRef)} onClose={() => setConflictRef(null)} onResolve={handleResolve} />
-      <RejectModal req={byRef(rejectRef)} onClose={() => setRejectRef(null)} />
+      <RejectActionModal
+        req={byRef(rejectActionRef)}
+        onClose={() => setRejectActionRef(null)}
+        onConfirmReject={handleConfirmReject}
+      />
+      <RejectRecordModal req={byRef(rejectRecordRef)} onClose={() => setRejectRecordRef(null)} />
     </div>
   );
 }

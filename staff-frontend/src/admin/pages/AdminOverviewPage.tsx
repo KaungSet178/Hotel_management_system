@@ -49,7 +49,14 @@ export function AdminOverviewPage() {
     toast.success('Executive monthly statement exported successfully.');
   };
 
-  const recentStays = selectedMonthRecords.slice(0, 5);
+  const recentStays = [...selectedMonthRecords]
+    .sort((a, b) => {
+      if (a.createdAt && b.createdAt) {
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      }
+      return b.checkIn.localeCompare(a.checkIn);
+    })
+    .slice(0, 5);
 
   return (
     <div className="space-y-7">
@@ -169,11 +176,11 @@ export function AdminOverviewPage() {
 
               <div className="flex items-center justify-between rounded-xl border border-outline-variant/30 bg-surface-container-low/60 p-3">
                 <div className="flex items-center gap-2.5">
-                  <span className="h-3 w-3 rounded-full bg-amber-500 shadow-xs" />
-                  <span className="text-label-sm font-semibold text-on-surface">Maintenance Lockout</span>
+                  <span className="h-3 w-3 rounded-full bg-sky-500 shadow-xs" />
+                  <span className="text-label-sm font-semibold text-on-surface">Customer Reserved</span>
                 </div>
-                <span className="text-label-md font-bold text-amber-700 dark:text-amber-400">
-                  {metrics.maintenanceRooms} Suites
+                <span className="text-label-md font-bold text-sky-700 dark:text-sky-400">
+                  {metrics.reservedRooms} Suites
                 </span>
               </div>
             </div>

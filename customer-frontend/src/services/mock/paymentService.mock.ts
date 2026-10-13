@@ -21,7 +21,6 @@ const METHOD_CONFIRM_PREFIX: Record<PaymentRequest['method'], string> = {
   WAVEPAY: 'WV',
   CB_PAY: 'CB',
   CARD: 'CARD',
-  PAY_AT_HOTEL: 'HOTEL',
 };
 
 function shouldSucceed(): boolean {

@@ -1,5 +1,7 @@
+import { useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { Calendar, ChevronDown, Sparkles } from 'lucide-react';
+import { Calendar, ChevronDown, Sparkles, Clock } from 'lucide-react';
+import { formatMyanmarDateTime } from '@/lib/format';
 
 interface AdminHeaderProps {
   title: string;
@@ -19,14 +21,28 @@ export function AdminHeader({
   actions,
   monthSelector,
 }: AdminHeaderProps) {
+  const [mmtTime, setMmtTime] = useState(() => formatMyanmarDateTime(new Date()));
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setMmtTime(formatMyanmarDateTime(new Date()));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   return (
     <div className="mb-6 flex flex-col justify-between gap-4 border-b border-outline-variant/40 pb-5 lg:flex-row lg:items-end">
       <div>
-        <div className="flex items-center gap-2 text-label-xs font-semibold tracking-wider text-secondary uppercase">
+        <div className="flex flex-wrap items-center gap-2 text-label-xs font-semibold tracking-wider text-secondary uppercase">
           <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
           <span>Grand Azure Resort & Spa</span>
           <span className="text-on-surface-variant/40">•</span>
           <span className="text-on-surface-variant">Management Console</span>
+          <span className="text-on-surface-variant/40">•</span>
+          <span className="inline-flex items-center gap-1 font-mono normal-case tracking-normal text-secondary font-semibold">
+            <Clock className="h-3 w-3" />
+            {mmtTime}
+          </span>
         </div>
 
         <div className="mt-1 flex flex-wrap items-center gap-3">
@@ -39,6 +55,13 @@ export function AdminHeader({
               {badge}
             </span>
           )}
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700 border border-emerald-200/80 shadow-2xs">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            Live Sync Active
+          </span>
         </div>
         <p className="mt-1 text-body-sm text-on-surface-variant">{subtitle}</p>
       </div>

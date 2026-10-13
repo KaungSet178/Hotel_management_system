@@ -20,9 +20,9 @@ const createBookingSchema = z.object({
     const d = new Date(val);
     return !isNaN(d.getTime());
   }, { message: 'check_out_date must be a valid date string (YYYY-MM-DD)' }),
-  payment_method: z.enum(['ONLINE', 'PAY_AT_HOTEL'], {
-    errorMap: () => ({ message: "payment_method must be either 'ONLINE' or 'PAY_AT_HOTEL'" })
-  }).optional().default('PAY_AT_HOTEL'),
+  payment_method: z.enum(['ONLINE'], {
+    errorMap: () => ({ message: "payment_method must be 'ONLINE'" })
+  }).optional().default('ONLINE'),
   guest_name: z.string().min(1).optional(),
   guest_email: z.string().email().optional(),
   guest_phone: z.string().optional(),
@@ -97,7 +97,7 @@ const updateServiceRequestStatusSchema = z.object({
   status: z.enum(['PENDING', 'IN_PROGRESS', 'COMPLETED'], {
     errorMap: () => ({ message: "status must be one of: 'PENDING', 'IN_PROGRESS', 'COMPLETED'" })
   }),
-  assigned_to: z.string().optional()
+  assigned_to: z.string().nullable().optional()
 });
 
 /**

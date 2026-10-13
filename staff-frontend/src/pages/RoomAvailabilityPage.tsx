@@ -8,7 +8,6 @@ import {
   Sparkles,
   Tag,
   Users,
-  Wrench,
   X,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
@@ -27,7 +26,7 @@ import {
   TextInput,
   Toggle,
 } from '@/components/ui';
-import type { Room, RoomStatus } from '@/types';
+import type { Room } from '@/types';
 
 function RoomCard({
   room,
@@ -128,24 +127,19 @@ function RoomCard({
         </div>
       )}
 
-      {room.status === 'CLEANING' && (
-        <div className="mt-3 flex items-center gap-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2 text-amber-800 dark:text-amber-300">
-          <RefreshCw className="h-3.5 w-3.5 animate-spin text-amber-600" />
-          <p className="text-label-sm font-medium">Housekeeping turnover in progress</p>
-        </div>
-      )}
-
-      {room.status === 'MAINTENANCE' && room.workOrder && (
-        <div className="mt-3 flex items-start gap-1.5 rounded-lg bg-error-container px-3 py-2 text-on-error-container">
-          <Wrench className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          <p className="text-label-sm">{room.workOrder}</p>
+      {room.status === 'RESERVED' && (
+        <div className="mt-3 rounded-lg bg-sky-500/10 border border-sky-500/20 px-3 py-2 text-sky-800 dark:text-sky-300">
+          <p className="text-label-sm font-medium">Customer Reservation Confirmed</p>
+          {room.departsAt && (
+            <p className="mt-0.5 text-label-xs text-sky-700/80">{room.departsAt}</p>
+          )}
         </div>
       )}
     </div>
   );
 }
 
-type StatusFilter = 'ALL' | RoomStatus;
+type StatusFilter = 'ALL' | 'AVAILABLE' | 'OCCUPIED' | 'RESERVED';
 
 export function RoomAvailabilityPage() {
   const { rooms, addWalkInBooking, walkIn, refresh } = useAppStore();
@@ -166,8 +160,6 @@ export function RoomAvailabilityPage() {
       available: rooms.filter((r) => r.status === 'AVAILABLE').length,
       occupied: rooms.filter((r) => r.status === 'OCCUPIED').length,
       reserved: rooms.filter((r) => r.status === 'RESERVED').length,
-      cleaning: rooms.filter((r) => r.status === 'CLEANING').length,
-      maintenance: rooms.filter((r) => r.status === 'MAINTENANCE').length,
     }),
     [rooms],
   );
@@ -189,13 +181,11 @@ export function RoomAvailabilityPage() {
       return true;
     });
 
-    // 2. Sort: AVAILABLE rooms ALWAYS FIRST, followed by RESERVED, OCCUPIED, CLEANING, MAINTENANCE
-    const statusPriority: Record<RoomStatus, number> = {
+    // 2. Sort: AVAILABLE rooms ALWAYS FIRST, followed by RESERVED, OCCUPIED
+    const statusPriority: Record<string, number> = {
       AVAILABLE: 0,
       RESERVED: 1,
       OCCUPIED: 2,
-      CLEANING: 3,
-      MAINTENANCE: 4,
     };
 
     return [...filtered].sort((a, b) => {
@@ -219,7 +209,13 @@ export function RoomAvailabilityPage() {
       toast.warning('Enter the guest full name to confirm the walk-in.');
       return;
     }
-    const ok = addWalkInBooking(name, chosen?.number);
+    const chosenMethod = payment.toLowerCase().includes('card') ? 'CARD' : 'KBZPAY';
+    const ok = addWalkInBooking(name, chosen?.number, {
+      nights: nightCount,
+      adults: Number(adults) || 2,
+      notes: notes.trim() || undefined,
+      paymentMethod: chosenMethod,
+    });
     if (!ok) {
       toast.warning('No available rooms to assign — check the floor inventory.');
       return;
@@ -261,8 +257,6 @@ export function RoomAvailabilityPage() {
             { id: 'AVAILABLE' as const, label: 'Available', count: counts.available, dot: 'bg-emerald-500' },
             { id: 'OCCUPIED' as const, label: 'Occupied', count: counts.occupied, dot: 'bg-[#0e2a4a]' },
             { id: 'RESERVED' as const, label: 'Reserved', count: counts.reserved, dot: 'bg-sky-500' },
-            { id: 'CLEANING' as const, label: 'Cleaning', count: counts.cleaning, dot: 'bg-amber-400' },
-            { id: 'MAINTENANCE' as const, label: 'Maintenance', count: counts.maintenance, dot: 'bg-red-500' },
           ].map((tab) => {
             const isActive = statusFilter === tab.id;
             return (

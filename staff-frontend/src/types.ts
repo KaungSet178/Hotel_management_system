@@ -43,6 +43,8 @@ export interface Booking {
   amount: number;
   note?: string;
   request?: string;
+  slip?: PaymentSlip;
+  paymentProof?: any;
 }
 
 export type RequestState =
@@ -79,6 +81,7 @@ export interface PaymentSlip {
   recipient: string;
   timestamp: string;
   receiptUrl?: string;
+  dataUrl?: string;
   /** The slip image the guest uploaded (URL or data URI) from the booking app. */
   image?: string;
   fileName?: string;
@@ -156,9 +159,11 @@ export interface ChannelRecord {
   totalAmount: number;
   paymentMethod: string;
   paymentStatus: string;
+  bookingStatus?: string;
   clerkOrSource: string;
   leadTimeDays?: number;
   specialNotes?: string;
+  createdAt?: string;
 }
 
 export interface AuditLogRecord {
@@ -177,7 +182,8 @@ export interface ExecutiveMetrics {
   totalRooms: number;
   occupiedRooms: number;
   availableRooms: number;
-  maintenanceRooms: number;
+  reservedRooms: number;
+  maintenanceRooms?: number;
   occupancyRate: number;
   adr: number;
   revPar: number;

@@ -18,7 +18,6 @@ import {
   Smartphone,
   Sparkles,
   Users,
-  Wallet,
 } from 'lucide-react';
 import { Container } from '@/components/ui/section';
 import { Card } from '@/components/ui/card';
@@ -42,7 +41,9 @@ import { toUserMessage } from '@/services/errors';
 import { computeBreakdown } from '@/lib/pricing';
 import { PAYMENT_ACCOUNTS } from '@/lib/paymentAccounts';
 import { formatMMK } from '@/lib/currency';
-import { formatRange, nightsBetween, todayISO } from '@/lib/dates';
+import { formatRange } from '@/lib/dates';
+import { broadcastLiveEvent } from '@/lib/broadcast';
+import { grantAccess } from '@/lib/access';
 import { cn } from '@/lib/cn';
 import type { AddOn, GuestDetails, PaymentMethod, PaymentStatus } from '@/types';
 
@@ -87,7 +88,6 @@ const PAYMENT_METHODS: PaymentMethodMeta[] = [
   { id: 'WAVEPAY', label: 'WavePay Digital QR', description: 'One-tap digital wallet QR payment.', icon: QrCode },
   { id: 'CB_PAY', label: 'CB Pay Direct Transfer', description: 'Direct transfer from your CB bank account.', icon: Landmark },
   { id: 'CARD', label: 'Card · Visa / Mastercard / MPU', description: 'Securely pay with a debit or credit card.', icon: CreditCard },
-  { id: 'PAY_AT_HOTEL', label: 'Pay at Hotel', description: 'Settle at reception when you arrive.', icon: Wallet },
 ];
 
 export function BookPage() {
@@ -214,8 +214,6 @@ function BookingFlow() {
   }
 
   const available = availabilityQuery.data?.available ?? true;
-  const daysToArrival = nightsBetween(todayISO(), stay.checkIn);
-  const payAtHotelEligible = daysToArrival <= 1;
 
   const toggleAddOn = (id: string) => {
     const current = draft.addOnIds;
@@ -249,15 +247,14 @@ function BookingFlow() {
       setPaymentError('Please complete the guest details and choose a payment method.');
       return;
     }
-    if (draft.paymentMethod !== 'PAY_AT_HOTEL' && !draft.paymentProof) {
+    if (!draft.paymentProof) {
       setPaymentError('Please upload a screenshot of your payment so our team can verify it.');
       return;
     }
     setSubmitting(true);
     setPaymentError(null);
     try {
-      const paymentStatus: PaymentStatus =
-        draft.paymentMethod === 'PAY_AT_HOTEL' ? 'pay_at_hotel' : 'awaiting_review';
+      const paymentStatus: PaymentStatus = 'awaiting_review';
 
       const created = await bookings.createBooking({
         draftKey: draft.draftKey,
@@ -276,6 +273,26 @@ function BookingFlow() {
       });
 
       const reference = created.data.reference;
+      if (created.data.pin) {
+        grantAccess(reference, created.data.pin);
+      }
+
+      // Realtime notification broadcast to staff console
+      broadcastLiveEvent('NEW_BOOKING', {
+        reference,
+        guestName: draft.guest.fullName,
+        roomNumber: room.roomNumbers?.[0] || room.name,
+        nights: stay.nights,
+        totalAmount: created.data.price?.total,
+        paymentMethod: draft.paymentMethod,
+      });
+      if (draft.paymentProof) {
+        broadcastLiveEvent('PAYMENT_PROOF_UPLOADED', {
+          reference,
+          guestName: draft.guest.fullName,
+        });
+      }
+
       resetDraft();
       toast.success('Booking submitted', `Reference ${reference} — awaiting staff confirmation.`);
       navigate(`/confirmation/${reference}`);
@@ -561,28 +578,24 @@ function BookingFlow() {
                 3. Payment method
               </h2>
               <p className="mt-1 text-sm text-ink-soft">
-                Choose how you’d like to pay. Digital wallets and transfers require a screenshot of your
-                payment so our team can verify it before the booking is confirmed. Pay at Hotel is only
-                offered for arrivals today or tomorrow — longer stays ahead are secured online.
+                Choose how you’d like to pay. Digital wallets and bank transfers require a screenshot of your
+                payment transfer so our team can verify it before the booking is confirmed.
               </p>
 
               <div className="mt-4 space-y-3">
                 {PAYMENT_METHODS.map((method) => {
-                  const disabled = method.id === 'PAY_AT_HOTEL' && !payAtHotelEligible;
                   const active = draft.paymentMethod === method.id;
                   const Icon = method.icon;
                   return (
                     <button
                       key={method.id}
                       type="button"
-                      disabled={disabled}
                       onClick={() => {
                         updateDraft({ paymentMethod: method.id });
                         setPaymentError(null);
                       }}
                       className={cn(
                         'flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition-colors',
-                        disabled && 'cursor-not-allowed opacity-55',
                         active ? 'border-brand-600 bg-brand-50/60' : 'border-brand-900/12 bg-white hover:border-brand-400',
                       )}
                     >
@@ -595,12 +608,6 @@ function BookingFlow() {
                           {method.badge ? <Badge tone="green">{method.badge}</Badge> : null}
                         </span>
                         <span className="mt-0.5 block text-xs text-ink-soft">{method.description}</span>
-                        {disabled ? (
-                          <span className="mt-1 block text-xs text-ink-mute">
-                            Not available for this arrival date — Pay at Hotel is only offered when you check in
-                            today or tomorrow. Please pay online.
-                          </span>
-                        ) : null}
                       </span>
                       <span
                         className={cn(
@@ -617,7 +624,7 @@ function BookingFlow() {
               </div>
 
               <div ref={paymentSectionRef} className="scroll-mt-24">
-                {draft.paymentMethod && draft.paymentMethod !== 'PAY_AT_HOTEL' ? (
+                {draft.paymentMethod ? (
                   <PaymentInstructions
                     account={PAYMENT_ACCOUNTS[draft.paymentMethod]}
                     amount={breakdown.total}
@@ -626,28 +633,6 @@ function BookingFlow() {
                     onProofChange={(proof) => updateDraft({ paymentProof: proof })}
                     error={paymentError ?? undefined}
                   />
-                ) : null}
-
-                {draft.paymentMethod === 'PAY_AT_HOTEL' && payAtHotelEligible ? (
-                  <div className="mt-4 rounded-2xl border border-brand-900/12 bg-lavender-100/50 p-4 text-sm text-ink-soft">
-                    <p className="font-medium text-ink">No advance payment required</p>
-                    <p className="mt-1">
-                      We’ll hold your suite and issue a folio now. Settle {formatMMK(breakdown.total)} at
-                      reception during check-in.
-                    </p>
-                  </div>
-                ) : null}
-
-                {draft.paymentMethod === 'PAY_AT_HOTEL' && !payAtHotelEligible ? (
-                  <div role="alert" className="mt-4 flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 sm:flex-row sm:items-center sm:justify-between">
-                    <p>
-                      Pay at Hotel is no longer available for this arrival date. Please choose an online
-                      payment method so our team can verify your booking.
-                    </p>
-                    <Button variant="outline" size="sm" onClick={() => updateDraft({ paymentMethod: null })}>
-                      Choose online payment
-                    </Button>
-                  </div>
                 ) : null}
 
                 <div className="mt-4 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
@@ -659,7 +644,7 @@ function BookingFlow() {
                 </div>
               </div>
 
-              {paymentError && draft.paymentMethod === 'PAY_AT_HOTEL' ? (
+              {paymentError ? (
                 <div role="alert" className="mt-4 flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
                   <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
                   <p>{paymentError}</p>
@@ -674,17 +659,10 @@ function BookingFlow() {
                   size="lg"
                   loading={submitting}
                   leadingIcon={<Lock className="h-4 w-4" aria-hidden="true" />}
-                  disabled={
-                    !draft.paymentMethod ||
-                    !available ||
-                    (draft.paymentMethod === 'PAY_AT_HOTEL' && !payAtHotelEligible) ||
-                    (draft.paymentMethod !== 'PAY_AT_HOTEL' && !draft.paymentProof)
-                  }
+                  disabled={!draft.paymentMethod || !available || !draft.paymentProof}
                   onClick={confirmBooking}
                 >
-                  {draft.paymentMethod === 'PAY_AT_HOTEL'
-                    ? `Confirm Booking · Pay ${formatMMK(breakdown.total)} at hotel`
-                    : `Submit ${formatMMK(breakdown.total)} payment for review`}
+                  Submit {formatMMK(breakdown.total)} payment for review
                 </Button>
               </div>
 
@@ -716,9 +694,7 @@ function BookingFlow() {
                 </p>
               ) : (
                 <p className="text-xs text-ink-mute">
-                  {draft.paymentMethod === 'PAY_AT_HOTEL'
-                    ? 'Your folio will be issued now and settled at check-in.'
-                    : 'You will receive a folio and QR express check-in pass instantly.'}
+                  You will receive a folio and QR express check-in pass instantly upon verification.
                 </p>
               )
             }

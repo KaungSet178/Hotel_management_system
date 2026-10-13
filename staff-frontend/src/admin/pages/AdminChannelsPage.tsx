@@ -295,7 +295,7 @@ export function AdminChannelsPage() {
               <option value="ALL">All Payment Statuses</option>
               <option value="PAID">Paid / Cleared</option>
               <option value="AWAITING_REVIEW">Awaiting Review</option>
-              <option value="PENDING">Pending (Pay at Hotel)</option>
+              <option value="PENDING">Pending Review</option>
             </select>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -58,6 +58,28 @@ function ReservationView({ reference }: { reference: string }) {
   const [cancelBusy, setCancelBusy] = useState(false);
   const [pinVisible, setPinVisible] = useState(false);
   const [pinCopied, setPinCopied] = useState(false);
+
+  // Real-time booking reload: listen to window event & subscribe to live broadcast
+  useEffect(() => {
+    const handleUpdate = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      const cleanRef = reference.replace(/^#/, '');
+      if (!detail?.reference || detail.reference.replace(/^#/, '') === cleanRef) {
+        query.reload();
+      }
+    };
+    window.addEventListener('stayflow:booking-updated', handleUpdate);
+    return () => window.removeEventListener('stayflow:booking-updated', handleUpdate);
+  }, [reference, query]);
+
+  // Polling fallback while booking is pending approval
+  useEffect(() => {
+    if (!query.data || query.data.status !== 'pending') return;
+    const timer = window.setInterval(() => {
+      query.reload();
+    }, 3000);
+    return () => window.clearInterval(timer);
+  }, [query.data?.status, query]);
 
   if (query.loading) {
     return (

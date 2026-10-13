@@ -13,15 +13,15 @@ const { supabase, isConfigured, memoryStore } = require('../supabaseClient');
 // Static / Development test token registry
 const DEMO_TOKENS = {
   'demo-token-admin': {
-    id: '00000000-0000-0000-0000-000000000001',
+    id: 'd7ac82d1-9c43-4525-906c-fa383406daba',
     email: 'admin@hotel.com',
-    full_name: 'Grand Azure Admin',
+    full_name: 'Grand Azure General Manager',
     role: 'ADMIN'
   },
   'demo-token-receptionist': {
-    id: '00000000-0000-0000-0000-000000000002',
+    id: '21f75765-2d96-40c0-9d9e-b63efead3945',
     email: 'reception@hotel.com',
-    full_name: 'Clara Vance',
+    full_name: 'Daw Nu Nu',
     role: 'RECEPTIONIST'
   },
   'demo-token-housekeeping': {

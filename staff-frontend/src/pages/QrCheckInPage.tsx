@@ -14,7 +14,7 @@ import {
   Users,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
-import { mmk } from '@/lib/format';
+import { mmk, todayIso } from '@/lib/format';
 import { LOCALE } from '@/data/seed';
 import { useAppStore } from '@/store';
 import { useToast } from '@/components/toast';
@@ -45,23 +45,33 @@ interface ScanResult {
 }
 
 export function QrCheckInPage() {
-  const { bookings, checkInBooking } = useAppStore();
+  const { bookings, checkInBooking, checkoutQueue } = useAppStore();
   const toast = useToast();
 
   const [manualRef, setManualRef] = useState('');
   const [lastScan, setLastScan] = useState<ScanResult | null>(null);
 
+  const today = todayIso();
   const expected = useMemo(
     () =>
       bookings.filter(
-        (b) => b.checkIn === '2025-10-18' && (b.status === 'CONFIRMED' || b.status === 'PENDING'),
+        (b) => b.checkIn === today && b.status === 'CONFIRMED',
       ),
-    [bookings],
+    [bookings, today],
   );
   const checkedIn = useMemo(
     () => bookings.filter((b) => b.status === 'CHECKED_IN'),
     [bookings],
   );
+  const departures = useMemo(
+    () =>
+      bookings.filter(
+        (b) => b.checkOut === today && b.status === 'CHECKED_IN',
+      ),
+    [bookings, today],
+  );
+  const departuresTodayCount =
+    checkoutQueue?.length !== undefined ? checkoutQueue.length : departures.length;
 
   const handleQrText = (raw: string): void => {
     const parsed = parseScan(raw);
@@ -107,7 +117,20 @@ export function QrCheckInPage() {
       return;
     }
 
-    if (match.status !== 'CONFIRMED' && match.status !== 'PENDING') {
+    if (match.status === 'PENDING') {
+      toast.warning(`${match.ref} is awaiting payment approval. Please verify payment slip first.`);
+      setLastScan({
+        ok: false,
+        ref: match.ref,
+        guest: match.guestName,
+        room: match.room ?? '—',
+        note: 'Reservation is awaiting payment verification and staff approval.',
+        at: Date.now(),
+      });
+      return;
+    }
+
+    if (match.status !== 'CONFIRMED') {
       toast.warning(`${match.ref} cannot be released (${match.status}).`);
       setLastScan({
         ok: false,
@@ -136,6 +159,11 @@ export function QrCheckInPage() {
   };
 
   const release = (ref: string, guest: string): void => {
+    const target = bookings.find((b) => b.ref === ref);
+    if (target?.status === 'PENDING') {
+      toast.warning(`${ref} is awaiting payment approval. Please verify payment slip first.`);
+      return;
+    }
     if (checkInBooking(ref)) {
       toast.success(`${guest} released · ${ref}`);
     } else {
@@ -313,7 +341,7 @@ export function QrCheckInPage() {
             />
             <StatChip
               label="Departures today"
-              value="2"
+              value={String(departuresTodayCount)}
               accent="amber"
               icon={<LogOut className="h-4 w-4" />}
             />

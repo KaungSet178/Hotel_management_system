@@ -290,7 +290,7 @@ export function CheckOutPage() {
         <div className="w-full shrink-0 space-y-4">
           <Panel
             title="Due for Check-out"
-            subtitle={`${checkoutQueue.length} room${checkoutQueue.length === 1 ? '' : 's'} in house`}
+            subtitle={`${checkoutQueue.length} departure${checkoutQueue.length === 1 ? '' : 's'} due today`}
             bodyClassName="p-0"
           >
             <div className="border-b border-outline-variant/40 p-3">

@@ -46,7 +46,7 @@ const STANDARDS = [
   {
     icon: Wallet,
     title: 'Clear Folio Control',
-    body: 'Pay at Hotel for same-day or next-day arrivals, or pay securely online for any stays ahead — all in MMK with zero currency conversion markups or concealed charges.',
+    body: 'Pay securely online via KBZPay, WavePay, CB Pay, or card — all in MMK with zero currency conversion markups or concealed charges.',
   },
 ];
 

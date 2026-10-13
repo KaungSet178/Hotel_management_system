@@ -11,6 +11,7 @@ import { initialRooms } from '@/data/seed';
 import { initialAuditLogs, initialChannelRecords } from '@/data/adminSeed';
 import { useAuth } from '@/auth';
 import { staffApi } from '@/services/staffApi';
+import { broadcastLiveEvent } from '@/lib/broadcast';
 
 interface AdminStoreType {
   // Rooms
@@ -66,9 +67,27 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Sync with live Supabase on mount and listen to realtime table changes
+  // Sync with live Supabase on mount and listen to realtime multi-transport changes
   useEffect(() => {
     let mounted = true;
+    let refreshTimer: any = null;
+
+    const debouncedRefresh = () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => {
+        if (!mounted) return;
+        Promise.all([
+          staffApi.fetchRooms(),
+          staffApi.fetchChannelRecords(),
+          staffApi.fetchAuditLogs(),
+        ]).then(([r, ch, al]) => {
+          if (!mounted) return;
+          setRooms(r);
+          setChannelRecords(ch);
+          setAuditLogs(al);
+        });
+      }, 150);
+    };
 
     refresh();
 
@@ -76,16 +95,20 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
       if (!mounted) return;
       if (table === 'rooms') {
         staffApi.fetchRooms().then((r) => mounted && setRooms(r));
+        staffApi.fetchChannelRecords().then((ch) => mounted && setChannelRecords(ch));
       } else if (table === 'bookings') {
         staffApi.fetchChannelRecords().then((ch) => mounted && setChannelRecords(ch));
         staffApi.fetchRooms().then((r) => mounted && setRooms(r));
       } else if (table === 'audit_logs') {
         staffApi.fetchAuditLogs().then((al) => mounted && setAuditLogs(al));
+      } else {
+        debouncedRefresh();
       }
     });
 
     return () => {
       mounted = false;
+      if (refreshTimer) clearTimeout(refreshTimer);
       unsubscribe();
     };
   }, [refresh]);
@@ -135,6 +158,8 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
         }),
       );
 
+      broadcastLiveEvent('ROOM_UPDATED', { roomId: id, updates });
+
       staffApi.updateRoomPricing(id, updates).then(() => {
         staffApi.fetchRooms().then(setRooms);
       }).catch((err) => console.error('updateRoom backend error:', err));
@@ -160,6 +185,8 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
         details: `Created new Room ${newRoom.number} (${newRoom.category}) at ${newRoom.pricePerNight.toLocaleString()} MMK/night on floor ${newRoom.floor}.`,
         ipAddress: '192.168.1.10 (Management Suite)',
       });
+
+      broadcastLiveEvent('ROOM_UPDATED', { roomId: tempId, action: 'CREATE' });
 
       staffApi.addRoom(newRoomData).then(() => {
         staffApi.fetchRooms().then(setRooms);
@@ -201,6 +228,8 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
         }),
       );
 
+      broadcastLiveEvent('ROOM_UPDATED', { roomId: id, status: nextStatus });
+
       staffApi.updateRoomStatus(id, nextStatus).then(() => {
         staffApi.fetchRooms().then(setRooms);
       }).catch((err) => console.error('toggleMaintenance backend error:', err));
@@ -223,6 +252,8 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
           ipAddress: '192.168.1.10 (Management Suite)',
         });
       }
+
+      broadcastLiveEvent('ROOM_UPDATED', { roomId: id, action: 'DELETE' });
 
       staffApi.deleteRoom(id).then(() => {
         staffApi.fetchRooms().then(setRooms);
@@ -253,6 +284,13 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
         ipAddress: '192.168.1.42 (Front Desk)',
       });
 
+      broadcastLiveEvent('NEW_BOOKING', {
+        reference: newRecord.ref,
+        guestName: recordData.guestName,
+        channel: recordData.channel,
+        amount: recordData.totalAmount,
+      });
+
       if (recordData.channel === 'WALK_IN') {
         staffApi.createWalkInBooking({
           guestName: recordData.guestName,
@@ -264,6 +302,8 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
           paymentMethod: recordData.paymentMethod,
           clerkName: recordData.clerkOrSource || user?.name,
         }, user).then(() => {
+          broadcastLiveEvent('BOOKING_CREATED', { reference: newRecord.ref, channel: 'WALK_IN' });
+          broadcastLiveEvent('ROOM_UPDATED', { roomNumber: recordData.roomNumber, status: 'OCCUPIED' });
           Promise.all([staffApi.fetchChannelRecords(), staffApi.fetchRooms()]).then(([ch, r]) => {
             setChannelRecords(ch);
             setRooms(r);
@@ -335,7 +375,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     const totalRooms = rooms.length;
     const occupiedRooms = rooms.filter((r) => r.status === 'OCCUPIED').length;
     const availableRooms = rooms.filter((r) => r.status === 'AVAILABLE').length;
-    const maintenanceRooms = rooms.filter((r) => r.status === 'MAINTENANCE').length;
+    const reservedRooms = rooms.filter((r) => r.status === 'RESERVED').length;
 
     const occupancyRate = totalRooms > 0 ? (occupiedRooms / totalRooms) * 100 : 0;
 
@@ -346,6 +386,9 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     let onlineCount = 0;
 
     selectedMonthRecords.forEach((rec) => {
+      if (rec.bookingStatus === 'CANCELLED' || rec.paymentStatus === 'CANCELLED_24H_HOLD') {
+        return;
+      }
       if (rec.channel === 'WALK_IN') {
         walkInRevenue += rec.totalAmount;
         walkInCount += 1;
@@ -366,16 +409,17 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     const adr = occupiedRooms > 0 ? activeOccupiedRateSum / occupiedRooms : 285000;
     const revPar = (adr * occupancyRate) / 100;
 
-    // Taxes
-    const netRoomRevenue = Math.round(mtdRevenue / 1.15); // Base amount before 10% service + 5% commercial tax
+    // Taxes - mathematically balanced: netBase + service10 + commercialTax5 === mtdRevenue
+    const netRoomRevenue = Math.round(mtdRevenue / 1.15);
     const serviceCharge10 = Math.round(netRoomRevenue * 0.1);
-    const commercialTax5 = Math.round(netRoomRevenue * 0.05);
+    const commercialTax5 = mtdRevenue - netRoomRevenue - serviceCharge10;
 
     return {
       totalRooms,
       occupiedRooms,
       availableRooms,
-      maintenanceRooms,
+      reservedRooms,
+      maintenanceRooms: 0,
       occupancyRate: Math.round(occupancyRate * 10) / 10,
       adr: Math.round(adr),
       revPar: Math.round(revPar),

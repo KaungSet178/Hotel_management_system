@@ -300,6 +300,7 @@ export interface StatItem {
   value: string;
   accent?: 'secondary' | 'primary' | 'amber' | 'danger';
   icon?: ReactNode;
+  subtext?: string;
 }
 
 const ACCENTS: Record<string, string> = {
@@ -309,13 +310,14 @@ const ACCENTS: Record<string, string> = {
   danger: 'text-error',
 };
 
-export function StatChip({ label, value, accent = 'secondary', icon }: StatItem) {
+export function StatChip({ label, value, accent = 'secondary', icon, subtext }: StatItem) {
   return (
     <div className="flex items-center gap-3 rounded-xl border border-outline-variant/50 bg-white px-3.5 py-2.5">
       {icon && <span className={cn('shrink-0', ACCENTS[accent])}>{icon}</span>}
       <div>
         <p className="text-label-md font-semibold text-on-surface">{value}</p>
         <p className="text-label-sm text-on-surface-variant">{label}</p>
+        {subtext && <p className="text-[11px] font-medium text-on-surface-variant/75">{subtext}</p>}
       </div>
     </div>
   );

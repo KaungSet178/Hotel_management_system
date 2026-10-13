@@ -72,17 +72,6 @@ export const PAYMENT_ACCOUNTS: Record<PaymentMethod, PaymentAccount> = {
       'Screenshot the receipt and upload it below.',
     ],
   },
-  PAY_AT_HOTEL: {
-    method: 'PAY_AT_HOTEL',
-    label: 'Pay at hotel',
-    accountName: 'Front desk · StayFlow',
-    accountId: 'Settle on arrival',
-    accountIdLabel: 'Payment on arrival',
-    instructions: [
-      'No advance payment is required for this rate.',
-      'Settle the full folio at reception during check-in.',
-    ],
-  },
 };
 
 /** Placeholder QR payload used until a real merchant QR image is supplied. */

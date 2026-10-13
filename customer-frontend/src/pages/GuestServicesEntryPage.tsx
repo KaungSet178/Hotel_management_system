@@ -41,7 +41,9 @@ export function GuestServicesEntryPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const eligible = (listQuery.data ?? []).filter((booking) => booking.status === 'checked_in');
+  const eligible = (listQuery.data ?? []).filter(
+    (booking) => booking.status === 'checked_in' || booking.status === 'confirmed',
+  );
 
   const open = async () => {
     setBusy(true);
@@ -97,7 +99,9 @@ export function GuestServicesEntryPage() {
                     <div>
                       <div className="flex items-center gap-2">
                         <h3 className="text-base font-semibold text-ink">{booking.hotel.name}</h3>
-                        <Badge tone="green">Checked in</Badge>
+                        <Badge tone={booking.status === 'checked_in' ? 'green' : 'brand'}>
+                          {booking.status === 'checked_in' ? 'Checked in' : 'Confirmed'}
+                        </Badge>
                       </div>
                       <p className="mt-1 text-sm text-ink-soft">
                         {booking.room.name} · {formatDate(booking.stay.checkIn)} – {formatDate(booking.stay.checkOut)}
