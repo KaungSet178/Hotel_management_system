@@ -665,7 +665,7 @@ INSERT INTO public.bookings (
         'txnRef', 'KBZ-PAY-2026-9481-QK9',
         'amount', 759000,
         'payer', 'Thant Zin Oo',
-        'recipient', 'StayFlow Hospitality Co., Ltd',
+        'recipient', 'StayEase Hospitality Co., Ltd',
         'timestamp', '18 Oct 2026, 14:18 MMT',
         'fileName', 'kbzpay_slip_9510.png',
         'receiptUrl', 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=600&q=80'
@@ -715,7 +715,7 @@ INSERT INTO public.bookings (
         'txnRef', 'WAVE-PAY-2026-8891-WP2',
         'amount', 1020000,
         'payer', 'Daw May Thida',
-        'recipient', 'StayFlow Hospitality Co., Ltd',
+        'recipient', 'StayEase Hospitality Co., Ltd',
         'timestamp', '18 Oct 2026, 15:40 MMT',
         'fileName', 'wavepay_slip_9515.png',
         'receiptUrl', 'https://images.unsplash.com/photo-1554224154-26032ffc0d07?auto=format&fit=crop&w=600&q=80'

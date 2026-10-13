@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase';
 
-export const CROSS_TAB_CHANNEL_NAME = 'stayflow_live_cross_tab_channel';
-export const REALTIME_TOPIC = 'stayflow-live-broadcast';
+export const CROSS_TAB_CHANNEL_NAME = 'stayease_live_cross_tab_channel';
+export const REALTIME_TOPIC = 'stayease-live-broadcast';
 
 export interface LiveBroadcastMessage {
   event: string;
@@ -78,7 +78,7 @@ export function broadcastLiveEvent(event: string, payload: Record<string, unknow
   // 3. LocalStorage storage event fallback
   try {
     if (typeof window !== 'undefined') {
-      window.localStorage.setItem('stayflow.live_event_bus', JSON.stringify(msg));
+      window.localStorage.setItem('stayease.live_event_bus', JSON.stringify(msg));
     }
   } catch {
     // Ignore localStorage errors
@@ -108,7 +108,7 @@ export function subscribeLiveEvents(callback: (msg: LiveBroadcastMessage) => voi
 
   // 2. Window storage listener fallback
   const onStorage = (e: StorageEvent) => {
-    if (e.key === 'stayflow.live_event_bus' && e.newValue) {
+    if (e.key === 'stayease.live_event_bus' && e.newValue) {
       try {
         const parsed = JSON.parse(e.newValue);
         if (parsed && parsed.event) {

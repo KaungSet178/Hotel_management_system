@@ -1,6 +1,6 @@
 -- ============================================================================
 -- Migration: 20261012_006_strict_row_level_security.sql
--- Description: Comprehensive Row Level Security (RLS) Policies for StayFlow
+-- Description: Comprehensive Row Level Security (RLS) Policies for StayEase
 -- ============================================================================
 
 -- 1. Helper function for role lookup that avoids RLS infinite recursion

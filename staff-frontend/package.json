@@ -1,9 +1,9 @@
 {
-  "name": "stayflow-staff-frontend",
+  "name": "stayease-staff-frontend",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "StayFlow — front desk staff console (reservations, room availability & walk-in booking, booking requests & payment verification, QR check-in, guest services, check-out).",
+  "description": "StayEase — front desk staff console (reservations, room availability & walk-in booking, booking requests & payment verification, QR check-in, guest services, check-out).",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

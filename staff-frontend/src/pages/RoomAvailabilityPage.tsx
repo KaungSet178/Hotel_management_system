@@ -231,7 +231,7 @@ export function RoomAvailabilityPage() {
   return (
     <div className="space-y-6">
       <SectionTitle
-        eyebrow="StayFlow · Front Desk"
+        eyebrow="StayEase · Front Desk"
         title="Room Availability & Walk-in Booking"
         description="Live inventory for Yangon Heritage with direct desk booking. Available suites are displayed first. Use status filters to inspect live occupancy and turnover."
         action={

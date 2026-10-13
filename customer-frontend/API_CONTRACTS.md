@@ -1,6 +1,6 @@
-# API Contracts — StayFlow Customer Frontend
+# API Contracts — StayEase Customer Frontend
 
-This document is the interface between the **StayFlow customer frontend** and the
+This document is the interface between the **StayEase customer frontend** and the
 future **backend API**. It describes every endpoint the app expects, the request
 shapes it sends, and the response shapes it renders.
 
@@ -14,7 +14,7 @@ selected with `VITE_SERVICE_MODE=http`.
 
 ## Conventions
 
-- **Base URL:** configured via `VITE_API_BASE_URL` (e.g. `https://api.stayflow.mm`).
+- **Base URL:** configured via `VITE_API_BASE_URL` (e.g. `https://api.stayease.mm`).
 - **Content type:** `application/json` for all request/response bodies.
 - **Envelope:** endpoints return the **resource directly** (an object or array) with
   HTTP `200`; empty results return `204 No Content`. The backend does **not** need to
@@ -567,7 +567,7 @@ digits-only suffix match so formatting differences don't break the link.
 ```bash
 # .env
 VITE_SERVICE_MODE=http
-VITE_API_BASE_URL=https://api.stayflow.mm
+VITE_API_BASE_URL=https://api.stayease.mm
 ```
 
 Then implement the endpoints above. No UI changes are required: the services registry

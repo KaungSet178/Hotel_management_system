@@ -226,7 +226,7 @@ realtimeBus.on('service_request:updated', (data) => broadcastEvent('service_requ
 // API Endpoints
 // ----------------------------------------------------------------------------
 
-// Mount Customer-Facing Frontend Router (StayFlow MVP Contracts)
+// Mount Customer-Facing Frontend Router (StayEase MVP Contracts)
 const customerRoutes = require('./routes/customerRoutes');
 app.use('/api', customerRoutes);
 

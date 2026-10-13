@@ -14,12 +14,12 @@ import type { AuthProvider, UserProfile } from '@/types';
 import { apiClient } from '@/services/apiClient';
 import { isSupabaseConfigured, supabase } from './supabase';
 
-const SESSION_KEY = 'stayflow.session.v1';
-const TOKEN_KEY = 'stayflow.auth.token';
-const SESSION_EVENT = 'stayflow:session-changed';
-const LAST_LOGIN_EMAIL_KEY = 'stayflow.last_login_email';
-const LAST_LOGIN_AT_KEY = 'stayflow.last_login_at';
-const LAST_LOGIN_NAME_KEY = 'stayflow.last_login_name';
+const SESSION_KEY = 'stayease.session.v1';
+const TOKEN_KEY = 'stayease.auth.token';
+const SESSION_EVENT = 'stayease:session-changed';
+const LAST_LOGIN_EMAIL_KEY = 'stayease.last_login_email';
+const LAST_LOGIN_AT_KEY = 'stayease.last_login_at';
+const LAST_LOGIN_NAME_KEY = 'stayease.last_login_name';
 
 const isHttpMode =
   import.meta.env.VITE_SERVICE_MODE === 'http' && import.meta.env.MODE !== 'test';
@@ -76,7 +76,7 @@ function write(user: UserProfile | null): void {
       window.localStorage.removeItem(SESSION_KEY);
       window.localStorage.removeItem(TOKEN_KEY);
       // NOTE: We intentionally keep LAST_LOGIN_EMAIL_KEY and LAST_LOGIN_NAME_KEY
-      // so StayFlow remembers the user identity for their next sign-in experience.
+      // so StayEase remembers the user identity for their next sign-in experience.
     }
   } catch {
     // Storage may be disabled — session still lives in memory for this tab.

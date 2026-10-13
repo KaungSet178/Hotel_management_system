@@ -4,7 +4,7 @@ const { supabase, isConfigured } = require('../supabaseClient');
 const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
-const AUTH_SECRET = process.env.QR_SECRET_SALT || 'stayflow-auth-secret-salt-2026';
+const AUTH_SECRET = process.env.QR_SECRET_SALT || 'stayease-auth-secret-salt-2026';
 
 // ----------------------------------------------------------------------------
 // Lightweight HMAC-SHA256 Token Helpers
@@ -233,7 +233,7 @@ router.post('/phone/verify', async (req, res) => {
     }
 
     // Auto-derive email for phone registration
-    const syntheticEmail = `phone_${cleanDigits}@stayflow.mm`;
+    const syntheticEmail = `phone_${cleanDigits}@stayease.mm`;
 
     let profile = null;
     if (isConfigured && supabase) {

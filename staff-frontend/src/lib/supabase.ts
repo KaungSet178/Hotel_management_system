@@ -19,7 +19,7 @@ export const supabase = isSupabaseConfigured
         persistSession: true,
         detectSessionInUrl: true,
         storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-        storageKey: 'stayflow.staff.supabase.auth.token',
+        storageKey: 'stayease.staff.supabase.auth.token',
       },
     })
   : null;

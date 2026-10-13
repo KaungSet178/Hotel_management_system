@@ -1,9 +1,9 @@
-# Grand Azure & StayFlow — Unified API Specification
+# Grand Azure & StayEase — Unified API Specification
 
 Welcome to the **Master Unified API Specification** for the Hotel Management System.
 
 This document serves as the single source of truth for both:
-1. **Customer Guest Applications** ([`customer-frontend/`](../customer-frontend/) — *StayFlow* client portal)
+1. **Customer Guest Applications** ([`customer-frontend/`](../customer-frontend/) — *StayEase* client portal)
 2. **Staff & Operational Systems** (Front Desk, Housekeeping, Operations & Administration)
 
 ---
@@ -36,7 +36,7 @@ Bearer demo-token-admin         -> Grand Azure Admin (General Manager / Admin)
 
 ---
 
-## 2. Customer Guest Endpoints (StayFlow)
+## 2. Customer Guest Endpoints (StayEase)
 
 The customer frontend endpoints return clean JSON resource bodies directly (`200 OK` on success, `404` for not found, `409` for sold-out conflicts, `422` for input validation errors).
 
@@ -170,7 +170,7 @@ Idempotent customer checkout creating a reservation with atomic row-locking conc
     "folioId": "SF-2026-9063",
     "pin": "8752",
     "draftKey": "dk_9f81a7b2c",
-    "hotel": { "id": "yangon-riverside", "name": "StayFlow Yangon Riverside" },
+    "hotel": { "id": "yangon-riverside", "name": "StayEase Yangon Riverside" },
     "room": { "id": "deluxe-azure-suite", "name": "Deluxe Azure Suite" },
     "stay": { "checkIn": "2026-10-25", "checkOut": "2026-10-28" },
     "nights": 3,

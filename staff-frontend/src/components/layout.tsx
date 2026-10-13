@@ -64,7 +64,7 @@ function Brand() {
         <Building2 className="h-5 w-5 text-on-secondary-container" />
       </span>
       <div>
-        <p className="text-title-sm leading-5 font-bold text-white">StayFlow</p>
+        <p className="text-title-sm leading-5 font-bold text-white">StayEase</p>
         <p className="text-label-sm text-white/55">{LOCALE.property}</p>
       </div>
     </div>
@@ -100,7 +100,7 @@ function SidebarContent({
 
   const handleLogout = async () => {
     await logout();
-    toast.info('Signed out of StayFlow portal');
+    toast.info('Signed out of StayEase portal');
     navigate('/login');
   };
 

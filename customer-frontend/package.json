@@ -1,9 +1,9 @@
 {
-  "name": "stayflow-frontend",
+  "name": "stayease-frontend",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "StayFlow — Hotel Management System customer-facing frontend MVP (ASEAN Digital Awards 2027)",
+  "description": "StayEase — Hotel Management System customer-facing frontend MVP (ASEAN Digital Awards 2027)",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

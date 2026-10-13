@@ -126,33 +126,33 @@ describe('email registration and authentication', () => {
 
   it('registers and signs in user with email', async () => {
     const res = await signUpWithEmail({
-      email: 'guest.new@stayflow.com',
+      email: 'guest.new@stayease.com',
       password: 'SecurePassword1',
       fullName: 'New Guest',
     });
 
-    expect(res.user.email).toBe('guest.new@stayflow.com');
+    expect(res.user.email).toBe('guest.new@stayease.com');
     expect(res.user.fullName).toBe('New Guest');
-    expect(getSession()?.email).toBe('guest.new@stayflow.com');
+    expect(getSession()?.email).toBe('guest.new@stayease.com');
   });
 
   it('authenticates with signInWithPassword', async () => {
     const user = await signInWithPassword({
-      email: 'returning.guest@stayflow.com',
+      email: 'returning.guest@stayease.com',
       password: 'SecurePassword1',
     });
 
-    expect(user.email).toBe('returning.guest@stayflow.com');
-    expect(getSession()?.email).toBe('returning.guest@stayflow.com');
+    expect(user.email).toBe('returning.guest@stayease.com');
+    expect(getSession()?.email).toBe('returning.guest@stayease.com');
   });
 
   it('remembers the last login email and timestamp even after sign out', async () => {
     await signInWithPassword({
-      email: 'remembered.guest@stayflow.com',
+      email: 'remembered.guest@stayease.com',
       password: 'SecurePassword1',
     });
 
-    expect(getLastLoginEmail()).toBe('remembered.guest@stayflow.com');
+    expect(getLastLoginEmail()).toBe('remembered.guest@stayease.com');
     expect(getLastLoginAt()).toBeTruthy();
     expect(getLastLoginName()).toBeTruthy();
 
@@ -160,7 +160,7 @@ describe('email registration and authentication', () => {
 
     expect(getSession()).toBeNull();
     // Email remains remembered for returning guest convenience
-    expect(getLastLoginEmail()).toBe('remembered.guest@stayflow.com');
+    expect(getLastLoginEmail()).toBe('remembered.guest@stayease.com');
     expect(getLastLoginName()).toBeTruthy();
   });
 });

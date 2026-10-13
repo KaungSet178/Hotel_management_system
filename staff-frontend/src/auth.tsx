@@ -35,7 +35,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const AUTH_STORAGE_KEY = 'stayflow.staff.active_profile';
+const AUTH_STORAGE_KEY = 'stayease.staff.active_profile';
 
 type DemoPreset = (typeof DEMO_PRESETS)[number];
 

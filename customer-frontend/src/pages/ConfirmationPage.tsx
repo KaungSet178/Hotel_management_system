@@ -56,11 +56,11 @@ function PassView({ reference }: { reference: string }) {
   const [pinRevealed, setPinRevealed] = useState(true);
   const [pinCopied, setPinCopied] = useState(false);
   const [showReminder, setShowReminder] = useState(
-    () => sessionStorage.getItem(`stayflow.pass-reminder.${reference}`) !== 'seen',
+    () => sessionStorage.getItem(`stayease.pass-reminder.${reference}`) !== 'seen',
   );
 
   const dismissReminder = () => {
-    sessionStorage.setItem(`stayflow.pass-reminder.${reference}`, 'seen');
+    sessionStorage.setItem(`stayease.pass-reminder.${reference}`, 'seen');
     setShowReminder(false);
   };
 
@@ -78,8 +78,8 @@ function PassView({ reference }: { reference: string }) {
         query.reload();
       }
     };
-    window.addEventListener('stayflow:booking-updated', handleUpdate);
-    return () => window.removeEventListener('stayflow:booking-updated', handleUpdate);
+    window.addEventListener('stayease:booking-updated', handleUpdate);
+    return () => window.removeEventListener('stayease:booking-updated', handleUpdate);
   }, [reference, query]);
 
   // Polling fallback while booking is awaiting staff approval
@@ -121,7 +121,7 @@ function PassView({ reference }: { reference: string }) {
     const canvas = qrRef.current?.querySelector('canvas');
     if (!canvas) return;
     const link = document.createElement('a');
-    link.download = `${booking.reference}-stayflow-pass.png`;
+    link.download = `${booking.reference}-stayease-pass.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
   };
@@ -155,7 +155,7 @@ function PassView({ reference }: { reference: string }) {
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(16);
-    doc.text('STAYFLOW', M, 17);
+    doc.text('STAYEASE', M, 17);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.text(ascii(`${booking.reference} · Folio ${booking.folioId}`), 210 - M, 17, { align: 'right' });
@@ -280,9 +280,9 @@ function PassView({ reference }: { reference: string }) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(140, 140, 140);
-    doc.text('Issued by StayFlow. Demo build — no real payment was processed.', 105, 292, { align: 'center' });
+    doc.text('Issued by StayEase. Demo build — no real payment was processed.', 105, 292, { align: 'center' });
 
-    doc.save(`${booking.reference}-stayflow.pdf`);
+    doc.save(`${booking.reference}-stayease.pdf`);
   };
 
   const downloadPdfAndDismiss = () => {
@@ -294,9 +294,9 @@ function PassView({ reference }: { reference: string }) {
     const ics = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
-      'PRODID:-//StayFlow//Reservation//EN',
+      'PRODID:-//StayEase//Reservation//EN',
       'BEGIN:VEVENT',
-      `UID:${booking.reference}@stayflow`,
+      `UID:${booking.reference}@stayease`,
       `SUMMARY:Stay at ${booking.hotel.name} (${booking.room.name})`,
       `DTSTART:${dt(booking.stay.checkIn, '140000')}`,
       `DTEND:${dt(booking.stay.checkOut, '120000')}`,
@@ -308,7 +308,7 @@ function PassView({ reference }: { reference: string }) {
     const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `${booking.reference}-stayflow.ics`;
+    link.download = `${booking.reference}-stayease.ics`;
     link.click();
     URL.revokeObjectURL(link.href);
   };

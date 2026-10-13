@@ -1,5 +1,5 @@
 -- ============================================================================
--- HOTEL MANAGEMENT SYSTEM: CUSTOMER FRONTEND (STAYFLOW) SUPPORT MIGRATION
+-- HOTEL MANAGEMENT SYSTEM: CUSTOMER FRONTEND (STAYEASE) SUPPORT MIGRATION
 -- Migration: 20261011_005_customer_frontend_support.sql
 -- ============================================================================
 -- Purpose:
@@ -11,7 +11,7 @@
 -- 5. Enhance 'room_service_requests' with delivery times and reservation references.
 -- 6. Upgrade 'book_room_atomic' PostgreSQL stored procedure with concurrency support
 --    for PENDING bookings and new customer attributes.
--- 7. Seed destination and hotel property catalogs with StayFlow luxury profiles.
+-- 7. Seed destination and hotel property catalogs with StayEase luxury profiles.
 -- ============================================================================
 
 -- ----------------------------------------------------------------------------
@@ -321,9 +321,9 @@ VALUES
 (
     'yangon-riverside',
     'yangon-riverside',
-    'StayFlow Yangon Riverside',
+    'StayEase Yangon Riverside',
     'Colonial prestige above the Yangon River corridor',
-    'Perched on Strand Road within our signature Heritage Quarter, StayFlow Yangon Riverside blends quiet colonial prestige with ultra-modern maritime tranquility. Quarter-sawn teak millwork, bespoke woven silk textiles and double-glazed acoustic glass frame sunrise views across the water.',
+    'Perched on Strand Road within our signature Heritage Quarter, StayEase Yangon Riverside blends quiet colonial prestige with ultra-modern maritime tranquility. Quarter-sawn teak millwork, bespoke woven silk textiles and double-glazed acoustic glass frame sunrise views across the water.',
     '{
         "line1": "No. 84 Strand Road",
         "line2": "Heritage Quarter",
@@ -348,9 +348,9 @@ VALUES
 (
     'downtown-central',
     'downtown-central',
-    'StayFlow Downtown Central',
+    'StayEase Downtown Central',
     'Smart urban stays in the beating heart of Yangon',
-    'Steps from Sule Pagoda and the modern business district, Downtown Central pairs StayFlow’s zero-waiting-time smart hospitality with high-performance workspaces, city-view studios and a vibrant breakfast social.',
+    'Steps from Sule Pagoda and the modern business district, Downtown Central pairs StayEase’s zero-waiting-time smart hospitality with high-performance workspaces, city-view studios and a vibrant breakfast social.',
     '{
         "line1": "No. 128 Sule Pagoda Road",
         "line2": "Downtown",
@@ -374,7 +374,7 @@ VALUES
 (
     'inle-lake',
     'inle-lake',
-    'StayFlow Inle Lake Sanctuary',
+    'StayEase Inle Lake Sanctuary',
     'Private garden villas above the Stilt-house waters',
     'Floating over the tranquil shallows of Inle Lake in Shan State, the Sanctuary is our most intimate residence. Executive garden villas with private plunge pools face the dawn across the water, while the spa and dining pavilion draw on local artisan traditions.',
     '{

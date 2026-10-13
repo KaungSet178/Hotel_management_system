@@ -14,7 +14,7 @@ The **Grand Azure Hotel Management System** is a unified, end-to-end hospitality
 
 The platform is organized as a clean monorepo:
 1. **`backend/`:** Node.js Express API Gateway, Supabase PostgreSQL database, concurrency-safe row-locking engine, dual payment gateway (Stripe & KBZPay), Server-Sent Events (SSE) realtime bus, and 24-hour auto-cancellation worker.
-2. **`customer-frontend/`:** StayFlow luxury guest web application (React, TypeScript, Vite, Tailwind CSS, Lucide icons, Vitest).
+2. **`customer-frontend/`:** StayEase luxury guest web application (React, TypeScript, Vite, Tailwind CSS, Lucide icons, Vitest).
 
 ---
 
@@ -89,7 +89,7 @@ Total Verified Test Coverage:        90 Passed, 0 Failed (100%)
 
 ### Phase 6: Customer Frontend Integration & Supabase Migration 005
 * **Customer Frontend Integration (`customer-frontend/`):**
-  * StayFlow customer web app pulled from teammate's branch.
+  * StayEase customer web app pulled from teammate's branch.
   * Features luxury destination showcase, hotel directory, interactive room cards, date picker, booking stepper, digital key pass, Folio PIN access, and in-room concierge.
   * 38/38 Vitest tests passing. Production build succeeds cleanly.
 * **Supabase Migration 005 (`backend/supabase/migrations/20261011_005_customer_frontend_support.sql`):**
@@ -110,7 +110,7 @@ Total Verified Test Coverage:        90 Passed, 0 Failed (100%)
   * Dedicated auth pages: `/verify-email` and `/reset-password`.
 * **Persistent Login & Last Identity Remembering:**
   * Configured client token persistence (`persistSession: true`, `autoRefreshToken: true`) and `INITIAL_SESSION` hydration to keep guests securely signed in across browser restarts until manual logout.
-  * Remembers and pre-fills the last logged-in identity (`stayflow.last_login_email`, `stayflow.last_login_name`, `stayflow.last_login_at`) with a "Keep me signed in on this device" control.
+  * Remembers and pre-fills the last logged-in identity (`stayease.last_login_email`, `stayease.last_login_name`, `stayease.last_login_at`) with a "Keep me signed in on this device" control.
 * **Mandatory Email Verification & Reservation Protection:**
   * Room browsing and searching is public, but completing a room reservation strictly requires an authenticated account with a verified email address.
   * Frontend `EmailVerificationGate` blocks guest folio submission until email confirmation.
@@ -137,7 +137,7 @@ Total Verified Test Coverage:        90 Passed, 0 Failed (100%)
   * Approving payment sets booking to `CONFIRMED` and `PAID`. Rejecting payment marks booking `CANCELLED` and immediately releases the room.
   * Unapproved reservations are strictly blocked from QR check-in until verified.
 * **Cross-Portal Real-Time Synchronization & Sound Notifications:**
-  * Bi-directional live broadcast using Supabase Realtime (`stayflow-live-broadcast`).
+  * Bi-directional live broadcast using Supabase Realtime (`stayease-live-broadcast`).
   * Customer portal immediately reacts to staff payment approval without needing manual page refresh.
   * Audio chime and notification badge indicators for new bookings and service updates.
 * **In-Room Concierge & Guest Services Dispatch:**

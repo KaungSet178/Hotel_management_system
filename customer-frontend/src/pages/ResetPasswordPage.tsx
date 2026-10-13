@@ -62,7 +62,7 @@ export function ResetPasswordPage() {
             <div className="space-y-2">
               <h1 className="font-serif text-2xl font-bold text-ink">Password Reset Complete</h1>
               <p className="text-sm text-ink-soft">
-                Your password has been changed successfully. You can now use your new password to sign in to StayFlow.
+                Your password has been changed successfully. You can now use your new password to sign in to StayEase.
               </p>
             </div>
             <Button

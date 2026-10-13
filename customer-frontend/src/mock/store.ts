@@ -16,8 +16,8 @@ import type { Room } from '@/types';
  * replaces this entirely (see `services/`).
  */
 
-const STORAGE_KEY = 'stayflow.db.v1';
-export const DB_EVENT = 'stayflow:db-changed';
+const STORAGE_KEY = 'stayease.db.v1';
+export const DB_EVENT = 'stayease:db-changed';
 
 export interface MockDb {
   bookings: Booking[];

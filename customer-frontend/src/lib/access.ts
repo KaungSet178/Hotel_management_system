@@ -10,7 +10,7 @@
  * signed lookup token. Swap this module for real auth during integration.
  */
 
-const ACCESS_KEY = 'stayflow.folio-access.v1';
+const ACCESS_KEY = 'stayease.folio-access.v1';
 
 export interface AccessEntry {
   reference: string;

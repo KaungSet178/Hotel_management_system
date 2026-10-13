@@ -150,7 +150,7 @@ const completedOctoberBookings = [
     payment_status: 'PAID',
     booking_status: 'CHECKED_OUT',
     folio_id: 'SF-2026-9430',
-    special_notes: 'Standard Twin 2 nights via StayFlow KBZPay.'
+    special_notes: 'Standard Twin 2 nights via StayEase KBZPay.'
   },
   }
 ];

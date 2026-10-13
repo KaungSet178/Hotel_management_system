@@ -67,7 +67,7 @@ export function GuestServicesEntryPage() {
         </h1>
         <p className="mt-3 max-w-2xl text-sm text-ink-soft sm:text-base">
           Tap once to request towels, dining, housekeeping or maintenance. Track each request live from your tap
-          to the knock at your door — part of StayFlow’s zero-waiting-time smart hospitality.
+          to the knock at your door — part of StayEase’s zero-waiting-time smart hospitality.
         </p>
       </div>
 

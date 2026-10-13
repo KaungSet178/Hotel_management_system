@@ -60,7 +60,7 @@ export class ApiClient {
       options.signal.addEventListener('abort', () => controller.abort(), { once: true });
     }
 
-    const token = typeof window !== 'undefined' ? window.localStorage.getItem('stayflow.auth.token') : null;
+    const token = typeof window !== 'undefined' ? window.localStorage.getItem('stayease.auth.token') : null;
     const authHeader: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
 
     let response: Response;

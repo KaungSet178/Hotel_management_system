@@ -148,7 +148,7 @@ export function RevenueChart() {
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-2 text-body-sm text-on-surface-variant">
             <span>
-              Cross-channel daily occupancy tracking comparing Walk-In counter arrivals against StayFlow direct web bookings
+              Cross-channel daily occupancy tracking comparing Walk-In counter arrivals against StayEase direct web bookings
             </span>
             <span className="text-on-surface-variant/40">•</span>
             <span className="inline-flex items-center gap-1 font-mono text-xs font-medium text-secondary">

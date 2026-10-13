@@ -76,13 +76,13 @@ export function QrCheckInPage() {
   const handleQrText = (raw: string): void => {
     const parsed = parseScan(raw);
     if (!parsed) {
-      toast.warning('Unrecognised QR code — not a StayFlow check-in pass.');
+      toast.warning('Unrecognised QR code — not a StayEase check-in pass.');
       setLastScan({
         ok: false,
         ref: '—',
         guest: 'Unrecognised code',
         room: '',
-        note: 'The QR did not carry a StayFlow booking reference.',
+        note: 'The QR did not carry a StayEase booking reference.',
         at: Date.now(),
       });
       return;
@@ -182,7 +182,7 @@ export function QrCheckInPage() {
   return (
     <div className="space-y-6">
       <SectionTitle
-        eyebrow="StayFlow · Front Desk"
+        eyebrow="StayEase · Front Desk"
         title="QR Check-in"
         description="Contactless, self-service check-in. Guests show their QR pass, the camera releases the room."
         action={
@@ -252,7 +252,7 @@ export function QrCheckInPage() {
                   <Building2 className="h-4 w-4 text-[#89f5e7]" />
                 </span>
                 <p className="text-label-md font-semibold text-white">
-                  StayFlow <span className="font-normal text-white/50">· {LOCALE.property}</span>
+                  StayEase <span className="font-normal text-white/50">· {LOCALE.property}</span>
                 </p>
                 <span className="rounded-full bg-white/10 px-2 py-0.5 text-label-sm text-white/60">
                   v1.2.4

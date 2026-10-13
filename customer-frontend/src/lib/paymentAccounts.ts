@@ -27,7 +27,7 @@ export const PAYMENT_ACCOUNTS: Record<PaymentMethod, PaymentAccount> = {
   KBZPAY: {
     method: 'KBZPAY',
     label: 'KBZPay',
-    accountName: 'StayFlow Hospitality Co., Ltd',
+    accountName: 'StayEase Hospitality Co., Ltd',
     accountId: '09 798 123 456',
     accountIdLabel: 'KBZPay wallet number',
     instructions: [
@@ -39,7 +39,7 @@ export const PAYMENT_ACCOUNTS: Record<PaymentMethod, PaymentAccount> = {
   WAVEPAY: {
     method: 'WAVEPAY',
     label: 'Wave Money',
-    accountName: 'StayFlow Hospitality Co., Ltd',
+    accountName: 'StayEase Hospitality Co., Ltd',
     accountId: '09 798 123 456',
     accountIdLabel: 'Wave Money number',
     instructions: [
@@ -51,7 +51,7 @@ export const PAYMENT_ACCOUNTS: Record<PaymentMethod, PaymentAccount> = {
   CB_PAY: {
     method: 'CB_PAY',
     label: 'CB Pay',
-    accountName: 'StayFlow Hospitality Co., Ltd',
+    accountName: 'StayEase Hospitality Co., Ltd',
     accountId: '0012 3456 7890 1234',
     accountIdLabel: 'CB bank account number',
     instructions: [
@@ -63,7 +63,7 @@ export const PAYMENT_ACCOUNTS: Record<PaymentMethod, PaymentAccount> = {
   CARD: {
     method: 'CARD',
     label: 'Bank transfer',
-    accountName: 'StayFlow Hospitality Co., Ltd',
+    accountName: 'StayEase Hospitality Co., Ltd',
     accountId: '0012 3456 7890 1234',
     accountIdLabel: 'Bank account number',
     instructions: [
@@ -77,7 +77,7 @@ export const PAYMENT_ACCOUNTS: Record<PaymentMethod, PaymentAccount> = {
 /** Placeholder QR payload used until a real merchant QR image is supplied. */
 export function paymentQrPayload(account: PaymentAccount, amount: number, reference: string): string {
   return [
-    'STAYFLOWPAY',
+    'STAYEASEPAY',
     `method=${account.method}`,
     `payee=${account.accountName}`,
     `account=${account.accountId}`,

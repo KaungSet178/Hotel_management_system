@@ -141,7 +141,7 @@ export function HotelDetailPage() {
       </section>
 
       <Card className="mt-10 p-6 text-sm text-ink-soft">
-        <p className="font-semibold text-ink">Booking directly with StayFlow</p>
+        <p className="font-semibold text-ink">Booking directly with StayEase</p>
         <p className="mt-1">
           Best rate guaranteed, instant confirmation and secure folio protection. Every direct booking is
           eligible for Smart QR Express Check-in.

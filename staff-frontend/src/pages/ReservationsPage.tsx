@@ -452,7 +452,7 @@ export function ReservationsPage() {
   return (
     <div className="space-y-6">
       <SectionTitle
-        eyebrow="StayFlow · Front Desk Operations"
+        eyebrow="StayEase · Front Desk Operations"
         title="Reservations Dashboard"
         description={`Live guest folio registry for Yangon Heritage • System date: ${shortDate(today, true)}`}
         action={

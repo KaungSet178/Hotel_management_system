@@ -64,7 +64,7 @@ export function HomePage() {
             <ImageWithFallback
               src={heroImage}
               alt=""
-              seed="stayflow-hero"
+              seed="stayease-hero"
               className="h-full w-full animate-ken-burns object-cover"
             />
           ) : (
@@ -126,7 +126,7 @@ export function HomePage() {
             <SectionHeading
               eyebrow="Curated sanctuaries"
               title="Featured Rooms &amp; Exclusive Suites"
-              description="A handpicked selection of our most requested suites, live availability synchronised across every StayFlow residence."
+              description="A handpicked selection of our most requested suites, live availability synchronised across every StayEase residence."
               action={
                 <Link to="/search" className={buttonStyles('outline', 'md', 'shrink-0')}>
                   View all rooms
@@ -158,9 +158,9 @@ export function HomePage() {
         <Container>
           <Reveal>
             <SectionHeading
-              eyebrow="StayFlow operating standard"
+              eyebrow="StayEase operating standard"
               title="Hospitality Without Bottlenecks"
-              description="Engineered for privacy, speed and discretion — powered by the StayFlow Smart Hospitality OS."
+              description="Engineered for privacy, speed and discretion — powered by the StayEase Smart Hospitality OS."
               align="center"
             />
           </Reveal>
@@ -188,7 +188,7 @@ export function HomePage() {
                   <p className="text-xs uppercase tracking-widest text-brand-200">Verified</p>
                 </div>
                 <blockquote className="text-sm text-brand-50/95 sm:text-base">
-                  “StayFlow has made our regular Yangon business travels so peaceful. Generating the QR code
+                  “StayEase has made our regular Yangon business travels so peaceful. Generating the QR code
                   before my flight and walking straight to Room 402 without standing in a single reception
                   line is unmatched luxury.”
                   <footer className="mt-3 text-xs font-medium text-brand-200">

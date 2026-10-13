@@ -43,7 +43,7 @@ interface CustomerNotificationContextValue {
   clearAll: () => void;
 }
 
-const STORAGE_KEY = 'stayflow.customer.notifications.v1';
+const STORAGE_KEY = 'stayease.customer.notifications.v1';
 
 const defaultSeedNotifications: CustomerNotification[] = [
   {
@@ -134,7 +134,7 @@ export function CustomerNotificationProvider({ children }: { children: ReactNode
       });
       if (typeof window !== 'undefined') {
         window.dispatchEvent(
-          new CustomEvent('stayflow:booking-updated', {
+          new CustomEvent('stayease:booking-updated', {
             detail: { reference: cleanRef, status: 'CONFIRMED', roomNumber },
           }),
         );
@@ -153,7 +153,7 @@ export function CustomerNotificationProvider({ children }: { children: ReactNode
       });
       if (typeof window !== 'undefined') {
         window.dispatchEvent(
-          new CustomEvent('stayflow:booking-updated', {
+          new CustomEvent('stayease:booking-updated', {
             detail: { reference: cleanRef, status: 'CANCELLED', reason },
           }),
         );
@@ -178,7 +178,7 @@ export function CustomerNotificationProvider({ children }: { children: ReactNode
           handleRejection(ref, payload?.reason as string);
         } else if (ref && isRelevantBooking(ref)) {
           window.dispatchEvent(
-            new CustomEvent('stayflow:booking-updated', {
+            new CustomEvent('stayease:booking-updated', {
               detail: { reference: ref.replace(/^#/, ''), status: bStatus, roomNumber },
             }),
           );
@@ -193,7 +193,7 @@ export function CustomerNotificationProvider({ children }: { children: ReactNode
         });
         if (typeof window !== 'undefined') {
           window.dispatchEvent(
-            new CustomEvent('stayflow:service-request-updated', {
+            new CustomEvent('stayease:service-request-updated', {
               detail: payload,
             }),
           );
@@ -240,7 +240,7 @@ export function CustomerNotificationProvider({ children }: { children: ReactNode
             });
             if (typeof window !== 'undefined') {
               window.dispatchEvent(
-                new CustomEvent('stayflow:service-request-updated', {
+                new CustomEvent('stayease:service-request-updated', {
                   detail: newRow,
                 }),
               );

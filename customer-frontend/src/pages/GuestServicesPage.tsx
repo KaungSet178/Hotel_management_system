@@ -88,7 +88,7 @@ function ServicesView({ reference }: { reference: string }) {
       requestsQuery.reload();
     };
 
-    window.addEventListener('stayflow:service-request-updated', handleUpdate);
+    window.addEventListener('stayease:service-request-updated', handleUpdate);
 
     const interval = setInterval(() => {
       const activeList = requestsQuery.data || [];
@@ -101,7 +101,7 @@ function ServicesView({ reference }: { reference: string }) {
     }, 3500);
 
     return () => {
-      window.removeEventListener('stayflow:service-request-updated', handleUpdate);
+      window.removeEventListener('stayease:service-request-updated', handleUpdate);
       clearInterval(interval);
     };
   }, [requestsQuery]);

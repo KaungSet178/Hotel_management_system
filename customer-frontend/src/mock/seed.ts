@@ -34,10 +34,10 @@ export const HOTELS: Hotel[] = [
   {
     id: 'yangon-riverside',
     slug: 'yangon-riverside',
-    name: 'StayFlow Yangon Riverside',
+    name: 'StayEase Yangon Riverside',
     tagline: 'Colonial prestige above the Yangon River corridor',
     description:
-      'Perched on Strand Road within our signature Heritage Quarter, StayFlow Yangon Riverside blends quiet colonial prestige with ultra-modern maritime tranquility. Quarter-sawn teak millwork, bespoke woven silk textiles and double-glazed acoustic glass frame sunrise views across the water.',
+      'Perched on Strand Road within our signature Heritage Quarter, StayEase Yangon Riverside blends quiet colonial prestige with ultra-modern maritime tranquility. Quarter-sawn teak millwork, bespoke woven silk textiles and double-glazed acoustic glass frame sunrise views across the water.',
     address: {
       line1: 'No. 84 Strand Road',
       line2: 'Heritage Quarter',
@@ -75,10 +75,10 @@ export const HOTELS: Hotel[] = [
   {
     id: 'downtown-central',
     slug: 'downtown-central',
-    name: 'StayFlow Downtown Central',
+    name: 'StayEase Downtown Central',
     tagline: 'Smart urban stays in the beating heart of Yangon',
     description:
-      'Steps from Sule Pagoda and the modern business district, Downtown Central pairs StayFlow’s zero-waiting-time smart hospitality with high-performance workspaces, city-view studios and a vibrant breakfast social. Engineered for the frequent traveller.',
+      'Steps from Sule Pagoda and the modern business district, Downtown Central pairs StayEase’s zero-waiting-time smart hospitality with high-performance workspaces, city-view studios and a vibrant breakfast social. Engineered for the frequent traveller.',
     address: {
       line1: 'No. 128 Sule Pagoda Road',
       line2: 'Downtown',
@@ -110,7 +110,7 @@ export const HOTELS: Hotel[] = [
   {
     id: 'inle-lake',
     slug: 'inle-lake',
-    name: 'StayFlow Inle Lake Sanctuary',
+    name: 'StayEase Inle Lake Sanctuary',
     tagline: 'Private garden villas above the Stilt-house waters',
     description:
       'Floating over the tranquil shallows of Inle Lake in Shan State, the Sanctuary is our most intimate residence. Executive garden villas with private plunge pools face the dawn across the water, while the spa and dining pavilion draw on local artisan traditions.',

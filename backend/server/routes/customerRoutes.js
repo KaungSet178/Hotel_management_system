@@ -14,7 +14,7 @@ const { createSecureQrToken } = require('../qrService');
 const { optionalAuth } = require('../middleware/auth');
 
 // ----------------------------------------------------------------------------
-// StayFlow Catalog Constants & Calculations
+// StayEase Catalog Constants & Calculations
 // ----------------------------------------------------------------------------
 
 const ADD_ONS = [
@@ -263,7 +263,7 @@ function mapRoom(r, hotel, dynamicAvailability = null) {
     room: roomObj,
     hotel: hotel || mapHotel({
       id: r.hotel_id || 'yangon-riverside',
-      name: 'StayFlow Yangon Riverside'
+      name: 'StayEase Yangon Riverside'
     }),
     ratePlans,
     fromNightly: ratePlans[1].nightlyRate, // Saver lowest rate
@@ -275,7 +275,7 @@ function mapBookingToFrontend(b, roomListing) {
   const room = roomListing ? roomListing.room : {
     id: b.room_id,
     hotelId: 'yangon-riverside',
-    name: b.room_number ? `Suite ${b.room_number}` : 'StayFlow Suite',
+    name: b.room_number ? `Suite ${b.room_number}` : 'StayEase Suite',
     category: 'Deluxe',
     wing: 'Main Tier',
     floorRange: 'Floor 1',
@@ -295,7 +295,7 @@ function mapBookingToFrontend(b, roomListing) {
 
   const hotel = roomListing ? roomListing.hotel : mapHotel({
     id: 'yangon-riverside',
-    name: 'StayFlow Yangon Riverside'
+    name: 'StayEase Yangon Riverside'
   });
 
   const ratePlans = buildRatePlans(defaultNightly(room.id, b.total_amount));
@@ -404,16 +404,16 @@ router.get('/hotels', async (req, res) => {
       }
       if (allHotels.length === 0) {
         allHotels = [
-          mapHotel({ id: 'yangon-riverside', slug: 'yangon-riverside', name: 'StayFlow Yangon Riverside', featured: true }),
-          mapHotel({ id: 'downtown-central', slug: 'downtown-central', name: 'StayFlow Downtown Central', featured: false }),
-          mapHotel({ id: 'inle-lake', slug: 'inle-lake', name: 'StayFlow Inle Lake Sanctuary', featured: false })
+          mapHotel({ id: 'yangon-riverside', slug: 'yangon-riverside', name: 'StayEase Yangon Riverside', featured: true }),
+          mapHotel({ id: 'downtown-central', slug: 'downtown-central', name: 'StayEase Downtown Central', featured: false }),
+          mapHotel({ id: 'inle-lake', slug: 'inle-lake', name: 'StayEase Inle Lake Sanctuary', featured: false })
         ];
       }
       const hotelMap = new Map(allHotels.map(h => [h.id, h]));
       const featuredRooms = rawRooms.filter(r => r.is_featured || r.featured || r.status === 'AVAILABLE');
       const targetRooms = featuredRooms.length > 0 ? featuredRooms : rawRooms;
       const listings = targetRooms.slice(0, 6).map(r => {
-        const h = hotelMap.get(r.hotel_id) || mapHotel({ id: r.hotel_id || 'yangon-riverside', name: 'StayFlow Yangon Riverside', featured: true });
+        const h = hotelMap.get(r.hotel_id) || mapHotel({ id: r.hotel_id || 'yangon-riverside', name: 'StayEase Yangon Riverside', featured: true });
         return mapRoom(r, h);
       });
       return res.json(listings);
@@ -432,9 +432,9 @@ router.get('/hotels', async (req, res) => {
     if (hotels.length === 0) {
       // Fallback
       hotels = [
-        mapHotel({ id: 'yangon-riverside', slug: 'yangon-riverside', name: 'StayFlow Yangon Riverside', featured: true }),
-        mapHotel({ id: 'downtown-central', slug: 'downtown-central', name: 'StayFlow Downtown Central', featured: false }),
-        mapHotel({ id: 'inle-lake', slug: 'inle-lake', name: 'StayFlow Inle Lake Sanctuary', featured: false })
+        mapHotel({ id: 'yangon-riverside', slug: 'yangon-riverside', name: 'StayEase Yangon Riverside', featured: true }),
+        mapHotel({ id: 'downtown-central', slug: 'downtown-central', name: 'StayEase Downtown Central', featured: false }),
+        mapHotel({ id: 'inle-lake', slug: 'inle-lake', name: 'StayEase Inle Lake Sanctuary', featured: false })
       ];
     }
 
@@ -467,9 +467,9 @@ router.get('/hotels/:hotelId', async (req, res) => {
     }
 
     if (!hotel) {
-      if (hotelId === 'yangon-riverside') hotel = mapHotel({ id: 'yangon-riverside', name: 'StayFlow Yangon Riverside', featured: true });
-      else if (hotelId === 'downtown-central') hotel = mapHotel({ id: 'downtown-central', name: 'StayFlow Downtown Central' });
-      else if (hotelId === 'inle-lake') hotel = mapHotel({ id: 'inle-lake', name: 'StayFlow Inle Lake Sanctuary' });
+      if (hotelId === 'yangon-riverside') hotel = mapHotel({ id: 'yangon-riverside', name: 'StayEase Yangon Riverside', featured: true });
+      else if (hotelId === 'downtown-central') hotel = mapHotel({ id: 'downtown-central', name: 'StayEase Downtown Central' });
+      else if (hotelId === 'inle-lake') hotel = mapHotel({ id: 'inle-lake', name: 'StayEase Inle Lake Sanctuary' });
     }
 
     if (!hotel) return res.status(404).json({ message: `Hotel "${hotelId}" not found.` });
@@ -495,7 +495,7 @@ router.get('/hotels/:hotelId/rooms', async (req, res) => {
         .maybeSingle();
       if (data) hotelObj = mapHotel(data);
     }
-    if (!hotelObj) hotelObj = mapHotel({ id: hotelId, name: 'StayFlow Hotel' });
+    if (!hotelObj) hotelObj = mapHotel({ id: hotelId, name: 'StayEase Hotel' });
 
     let hotelRooms = rawRooms.filter(r => (r.hotel_id || 'yangon-riverside') === hotelId || hotelId === 'all');
     if (adults && Number(adults) > 0) {
@@ -554,9 +554,9 @@ router.get('/rooms', async (req, res, next) => {
     }
     if (allHotels.length === 0) {
       allHotels = [
-        mapHotel({ id: 'yangon-riverside', slug: 'yangon-riverside', name: 'StayFlow Yangon Riverside', featured: true }),
-        mapHotel({ id: 'downtown-central', slug: 'downtown-central', name: 'StayFlow Downtown Central', featured: false }),
-        mapHotel({ id: 'inle-lake', slug: 'inle-lake', name: 'StayFlow Inle Lake Sanctuary', featured: false })
+        mapHotel({ id: 'yangon-riverside', slug: 'yangon-riverside', name: 'StayEase Yangon Riverside', featured: true }),
+        mapHotel({ id: 'downtown-central', slug: 'downtown-central', name: 'StayEase Downtown Central', featured: false }),
+        mapHotel({ id: 'inle-lake', slug: 'inle-lake', name: 'StayEase Inle Lake Sanctuary', featured: false })
       ];
     }
 
@@ -601,7 +601,7 @@ router.get('/rooms', async (req, res, next) => {
     }
 
     const listings = filteredRooms.map(r => {
-      const h = hotelMap.get(r.hotel_id) || mapHotel({ id: r.hotel_id || 'yangon-riverside', name: 'StayFlow Hotel' });
+      const h = hotelMap.get(r.hotel_id) || mapHotel({ id: r.hotel_id || 'yangon-riverside', name: 'StayEase Hotel' });
       const isBooked = conflictingRoomIds.has(r.id);
       const isAvail = !isBooked && r.status !== 'MAINTENANCE';
       const dynamicAvail = {
@@ -638,7 +638,7 @@ router.get('/rooms/:roomId', async (req, res) => {
         .maybeSingle();
       if (data) hotel = mapHotel(data);
     }
-    if (!hotel) hotel = mapHotel({ id: room.hotel_id || 'yangon-riverside', name: 'StayFlow Hotel' });
+    if (!hotel) hotel = mapHotel({ id: room.hotel_id || 'yangon-riverside', name: 'StayEase Hotel' });
 
     res.json(mapRoom(room, hotel));
   } catch (err) {
@@ -816,7 +816,7 @@ router.post('/bookings', optionalAuth, async (req, res, next) => {
       folioId,
       pin,
       draftKey: draftKey || `dk_${reference}`,
-      hotel: mapHotel({ id: roomRow.hotel_id || hotelId || 'yangon-riverside', name: 'StayFlow Hotel' }),
+      hotel: mapHotel({ id: roomRow.hotel_id || hotelId || 'yangon-riverside', name: 'StayEase Hotel' }),
       room: mapRoom(roomRow).room,
       stay: { checkIn, checkOut },
       nights,

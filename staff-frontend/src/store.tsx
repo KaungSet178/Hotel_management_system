@@ -56,7 +56,7 @@ function proofToBookingRequest(proof: PaymentProofRecord): BookingRequest {
       txnRef: proof.txnRef ?? `UPL-${shortRef}`,
       amount: proof.amount ?? 0,
       payer: proof.payer ?? proof.guestName ?? 'Guest',
-      recipient: 'StayFlow Hospitality Co., Ltd',
+      recipient: 'StayEase Hospitality Co., Ltd',
       timestamp: uploaded.toLocaleString(),
       receiptUrl: proof.dataUrl,
       dataUrl: proof.dataUrl,

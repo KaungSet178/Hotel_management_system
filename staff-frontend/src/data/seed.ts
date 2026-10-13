@@ -168,7 +168,7 @@ export const initialRequests: BookingRequest[] = [
     note: 'Celebrating wedding anniversary. Requesting quiet high floor with harbor view. Arriving via private transfer ~14:00.',
     slip: {
       txnRef: 'KBZ-PAY-2026-9481-QK9', amount: 759000, payer: 'Thant Zin Oo',
-      recipient: 'StayFlow Hospitality Co., Ltd', timestamp: '13 Oct 2026, 14:18 MMT',
+      recipient: 'StayEase Hospitality Co., Ltd', timestamp: '13 Oct 2026, 14:18 MMT',
     },
   },
   {
@@ -180,7 +180,7 @@ export const initialRequests: BookingRequest[] = [
     note: 'QR pass #QP-501-88 dispatched to guest mobile.',
     slip: {
       txnRef: 'KBZ-PAY-2026-9508-QP1', amount: 1850000, payer: 'Jean-Luc Meyer',
-      recipient: 'StayFlow Hospitality Co., Ltd', timestamp: '13 Oct 2026, 12:06 MMT',
+      recipient: 'StayEase Hospitality Co., Ltd', timestamp: '13 Oct 2026, 12:06 MMT',
     },
   },
   {
@@ -192,7 +192,7 @@ export const initialRequests: BookingRequest[] = [
     note: 'QR pass #QP-208-56 dispatched to guest mobile.',
     slip: {
       txnRef: 'KBZ-PAY-2026-9506-QK6', amount: 555000, payer: 'Daw Than Than Swe',
-      recipient: 'StayFlow Hospitality Co., Ltd', timestamp: '13 Oct 2026, 13:50 MMT',
+      recipient: 'StayEase Hospitality Co., Ltd', timestamp: '13 Oct 2026, 13:50 MMT',
     },
   },
   {

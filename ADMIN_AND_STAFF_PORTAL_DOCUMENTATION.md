@@ -1,8 +1,8 @@
-# StayFlow Unified Operations & Executive Management Portal Documentation
+# StayEase Unified Operations & Executive Management Portal Documentation
 
 ## 1. Executive Summary
 
-This document details the architecture, authentication, role-based access control (RBAC), and feature implementation of the **StayFlow Unified Operations & Executive Management Portal** (`staff-frontend`). 
+This document details the architecture, authentication, role-based access control (RBAC), and feature implementation of the **StayEase Unified Operations & Executive Management Portal** (`staff-frontend`). 
 
 The portal serves two distinct internal hospitality personas through a single, secure web application:
 1. **Hotel General Manager & Administrators (`ADMIN`)**: Strategic yield management, dynamic room pricing, channel intelligence, financial ledgers, and audit logs.
@@ -106,7 +106,7 @@ Per hospitality security standards and explicit product requirements:
 - **Room Status Protection:** Approving a booking sets `booking_status: CONFIRMED` and `payment_status: PAID`. Rejecting a booking sets `booking_status: CANCELLED` and automatically releases the room back to `AVAILABLE`.
 
 ### 5.4 Cross-Portal Real-Time Synchronization & Sound Alerts
-- **Instant Two-Way Broadcast:** Connected via Supabase Realtime broadcast channels (`stayflow-live-broadcast`).
+- **Instant Two-Way Broadcast:** Connected via Supabase Realtime broadcast channels (`stayease-live-broadcast`).
 - **Zero-Refresh Updates:** When staff approves a payment slip, the customer's portal immediately updates to "Booking Approved" without page reload.
 - **Audio Chimes & Notification Bell:** Front desk staff and customers receive non-intrusive sound alerts and badge indicators on new reservations and service updates.
 

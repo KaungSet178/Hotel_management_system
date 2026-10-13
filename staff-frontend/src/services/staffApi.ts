@@ -34,7 +34,7 @@ async function getAuthHeader(): Promise<Record<string, string>> {
   }
   // Fallback to active demo token if stored
   try {
-    const raw = localStorage.getItem('stayflow.staff.active_profile');
+    const raw = localStorage.getItem('stayease.staff.active_profile');
     if (raw) {
       const u = JSON.parse(raw);
       if (u.role === 'ADMIN') return { Authorization: 'Bearer demo-token-admin' };
@@ -185,7 +185,7 @@ export function mapSupabaseBookingToUi(b: any, roomsMap?: Map<string, any>): Boo
       txnRef: proof?.txnRef || b.transaction_id || `TXN-${b.booking_reference}`,
       amount: Number(proof?.amount || b.total_amount || 0),
       payer: proof?.payer || b.guest_name || 'Guest',
-      recipient: proof?.recipient || 'StayFlow Hospitality Co., Ltd',
+      recipient: proof?.recipient || 'StayEase Hospitality Co., Ltd',
       timestamp: proof?.timestamp || proof?.uploadedAt || b.created_at || 'Recently',
       receiptUrl: imageUri,
       dataUrl: imageUri,
@@ -250,7 +250,7 @@ export function mapSupabaseRequestToUi(b: any, roomsMap?: Map<string, any>): Boo
       txnRef: proof?.txnRef || b.transaction_id || `TXN-${b.booking_reference}`,
       amount: Number(proof?.amount || b.total_amount || 0),
       payer: proof?.payer || b.guest_name || 'Guest',
-      recipient: proof?.recipient || 'StayFlow Hospitality Co., Ltd',
+      recipient: proof?.recipient || 'StayEase Hospitality Co., Ltd',
       timestamp: proof?.timestamp || proof?.uploadedAt || b.created_at || 'Recently',
       receiptUrl: imageUri,
       dataUrl: imageUri,

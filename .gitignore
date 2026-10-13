@@ -44,5 +44,6 @@ Thumbs.db
 .system_generated/
 scratch/
 
-# StayFlow dev-only shared payment-proof store (see shared/vite-payment-proofs.mjs)
+# StayEase dev-only shared payment-proof store (see shared/vite-payment-proofs.mjs)
+.stayease/
 .stayflow/

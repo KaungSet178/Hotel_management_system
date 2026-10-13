@@ -263,7 +263,7 @@ function SignInForm() {
   const getTitle = () => {
     switch (mode) {
       case 'login':
-        return 'Sign In to StayFlow';
+        return 'Sign In to StayEase';
       case 'register':
         return 'Create an Account';
       case 'forgot_password':
@@ -273,7 +273,7 @@ function SignInForm() {
       case 'phone':
         return 'Sign In with Phone';
       default:
-        return 'Welcome to StayFlow';
+        return 'Welcome to StayEase';
     }
   };
 

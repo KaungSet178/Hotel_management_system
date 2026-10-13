@@ -23,7 +23,7 @@ describe('refs', () => {
     const parsed = JSON.parse(payload) as Record<string, unknown>;
     expect(parsed.ref).toBe('SF-89241-K7');
     expect(parsed.ci).toBe('2026-10-16');
-    expect(parsed.type).toBe('stayflow-express-checkin');
+    expect(parsed.type).toBe('stayease-express-checkin');
     expect(payload).not.toContain('@');
     expect(String(parsed.token)).toMatch(/^ci_[A-Z0-9]{12}$/);
   });

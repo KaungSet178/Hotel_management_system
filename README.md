@@ -27,13 +27,13 @@ hotel_management_system/
 │   ├── .env.production.example # Production environment variable template
 │   ├── API_DOCUMENTATION.md  # Master Unified REST API reference
 │   └── BACKEND_SETUP.md      # Backend developer & database setup guide
-├── customer-frontend/        # StayFlow Luxury Guest Web Application
+├── customer-frontend/        # StayEase Luxury Guest Web Application
 │   ├── src/                  # React 18, TypeScript, Tailwind CSS
 │   ├── API_CONTRACTS.md      # Customer frontend API specifications
 │   ├── README.md             # Customer web app documentation & architecture
 │   ├── vitest.config.ts      # 38 automated frontend tests
 │   └── package.json          # Frontend dependencies & scripts
-├── staff-frontend/           # StayFlow staff and admin portal (React + Vite)
+├── staff-frontend/           # StayEase staff and admin portal (React + Vite)
 │   ├── src/                  # Front-desk operations, authentication and admin screens
 │   ├── .env.example          # Supabase configuration template
 │   └── package.json          # Staff portal dependencies and scripts
@@ -92,7 +92,7 @@ reservations, check-in/out, guest services, and role-based admin screens.
 # Start the Express Backend API (http://localhost:3000)
 npm run dev
 
-# Start the StayFlow Customer Frontend (http://localhost:5173)
+# Start the StayEase Customer Frontend (http://localhost:5173)
 npm run frontend:dev
 
 # Run Backend Automated Integration Tests (46 passing tests)
@@ -119,4 +119,4 @@ npm run frontend:build
 | [**ADMIN_AND_STAFF_PORTAL_DOCUMENTATION.md**](ADMIN_AND_STAFF_PORTAL_DOCUMENTATION.md) | **Staff & Admin Management Portal Architecture**: Supabase Auth, RBAC, strict role isolation, Executive suite, and Front Desk operations. |
 | [**PROJECT_ROADMAP_AND_STATUS.md**](PROJECT_ROADMAP_AND_STATUS.md) | **Master Roadmap & Status**: Completed phases, test verification metrics, and detailed backlog of remaining work (Staff Portal UI, Payment Slip approval, Production deployment). |
 | [**customer-frontend/README.md**](customer-frontend/README.md) | **Customer Web App Guide**: Architecture, service modes (`mock` vs `http`), state management, and design system. |
-| [**customer-frontend/API_CONTRACTS.md**](customer-frontend/API_CONTRACTS.md) | **StayFlow Frontend Contracts**: Exact request/response shapes consumed by the customer UI. |
+| [**customer-frontend/API_CONTRACTS.md**](customer-frontend/API_CONTRACTS.md) | **StayEase Frontend Contracts**: Exact request/response shapes consumed by the customer UI. |

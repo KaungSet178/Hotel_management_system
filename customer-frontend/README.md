@@ -1,6 +1,6 @@
-# StayFlow — Hotel Management System (Customer Frontend)
+# StayEase — Hotel Management System (Customer Frontend)
 
-A polished, responsive, customer-facing frontend MVP for **StayFlow**, a boutique
+A polished, responsive, customer-facing frontend MVP for **StayEase**, a boutique
 hotel brand in Myanmar. Built for the **ASEAN Digital Awards 2027**, it delivers the
 complete digital guest journey — from discovery to booking, check-in, folio
 management and in-stay service requests — and is structured so a real backend can
@@ -72,7 +72,7 @@ See `.env.example`:
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `VITE_SERVICE_MODE` | `mock` | `mock` uses the in-browser service layer; `http` calls the real backend. |
-| `VITE_API_BASE_URL` | _(empty)_ | Base URL for the real backend, e.g. `https://api.stayflow.mm`. Required when `VITE_SERVICE_MODE=http`. |
+| `VITE_API_BASE_URL` | _(empty)_ | Base URL for the real backend, e.g. `https://api.stayease.mm`. Required when `VITE_SERVICE_MODE=http`. |
 
 There is **no silent fallback** from `http` to `mock`: if `http` is selected and the
 API is unreachable or unconfigured, the UI surfaces a clear, actionable error. This
@@ -182,7 +182,7 @@ total    = base + service + tax
 
 - **Seed data** (`src/mock/seed.ts`): 3 destinations, 3 hotels, 9 room types, 6 add-ons,
   4 seeded reservations and in-stay service requests.
-- **Persistence:** the mock DB survives reloads via `localStorage` (`stayflow.db.v1`).
+- **Persistence:** the mock DB survives reloads via `localStorage` (`stayease.db.v1`).
 - **Simulated latency** on every call.
 - **Manual transfers & staff approval (payment flow):** there is no live payment
   gateway. On the payment step the guest picks a method, then sees the **payee account
@@ -204,8 +204,8 @@ Demo tips:
 - The **Presidential Garden Villa** is intentionally blocked for the next week to
   demonstrate sold-out behaviour.
 
-localStorage keys: `stayflow.db.v1` (mock DB), `stayflow.folio-access.v1` (granted
-folios), `stayflow.booking-draft.v1` (in-progress booking).
+localStorage keys: `stayease.db.v1` (mock DB), `stayease.folio-access.v1` (granted
+folios), `stayease.booking-draft.v1` (in-progress booking).
 
 ---
 
@@ -216,7 +216,7 @@ the choice is offered in the global sign-in dialog. No real credentials or token
 are exchanged; the flow and its session are mocked in [`src/lib/auth.ts`](./src/lib/auth.ts)
 and surfaced through [`src/context/AuthContext.tsx`](./src/context/AuthContext.tsx).
 
-- **Session:** persisted in `localStorage` (`stayflow.session.v1`) and synced across
+- **Session:** persisted in `localStorage` (`stayease.session.v1`) and synced across
   tabs, so a signed-in guest stays signed in until they sign out.
 - **Identity & tracing:** a reservation is linked to a guest by **email or phone**
   (`matchesProfile`), so the profile page can trace live booking status for every
@@ -339,4 +339,4 @@ Covered by 38 focused unit tests across 6 files:
 
 ---
 
-© 2026 StayFlow. Built as a customer-experience MVP for the ASEAN Digital Awards 2027.
+© 2026 StayEase. Built as a customer-experience MVP for the ASEAN Digital Awards 2027.

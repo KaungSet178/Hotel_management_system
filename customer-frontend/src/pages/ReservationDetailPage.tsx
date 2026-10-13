@@ -68,8 +68,8 @@ function ReservationView({ reference }: { reference: string }) {
         query.reload();
       }
     };
-    window.addEventListener('stayflow:booking-updated', handleUpdate);
-    return () => window.removeEventListener('stayflow:booking-updated', handleUpdate);
+    window.addEventListener('stayease:booking-updated', handleUpdate);
+    return () => window.removeEventListener('stayease:booking-updated', handleUpdate);
   }, [reference, query]);
 
   // Polling fallback while booking is pending approval
@@ -123,9 +123,9 @@ function ReservationView({ reference }: { reference: string }) {
     const ics = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
-      'PRODID:-//StayFlow//Reservation//EN',
+      'PRODID:-//StayEase//Reservation//EN',
       'BEGIN:VEVENT',
-      `UID:${booking.reference}@stayflow`,
+      `UID:${booking.reference}@stayease`,
       `SUMMARY:Stay at ${booking.hotel.name} (${booking.room.name})`,
       `DTSTART:${dt(booking.stay.checkIn, '140000')}`,
       `DTEND:${dt(booking.stay.checkOut, '120000')}`,
@@ -137,7 +137,7 @@ function ReservationView({ reference }: { reference: string }) {
     const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `${booking.reference}-stayflow.ics`;
+    link.download = `${booking.reference}-stayease.ics`;
     link.click();
     URL.revokeObjectURL(link.href);
   };

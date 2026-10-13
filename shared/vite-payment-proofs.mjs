@@ -1,5 +1,5 @@
 /**
- * StayFlow — shared payment-proof store (development only).
+ * StayEase — shared payment-proof store (development only).
  *
  * This Vite plugin exposes a tiny REST-ish API that both the customer and the
  * staff dev servers mount, so a screenshot a guest uploads while booking can be
@@ -8,7 +8,7 @@
  * a matter of pointing VITE_API_BASE_URL at the backend — no UI changes needed.
  *
  * Records are persisted to a single JSON file at the repo root
- * (`.stayflow/payment-proofs.json`) so both origins (localhost:5174 and
+ * (`.stayease/payment-proofs.json`) so both origins (localhost:5174 and
  * localhost:5175) share one source of truth.
  *
  * Endpoints:
@@ -23,7 +23,7 @@ import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(here, '..');
-const STORE_DIR = join(REPO_ROOT, '.stayflow');
+const STORE_DIR = join(REPO_ROOT, '.stayease');
 const STORE_FILE = join(STORE_DIR, 'payment-proofs.json');
 const BASE_PATH = '/api/payment-proofs';
 const MAX_BODY_BYTES = 15 * 1024 * 1024;
@@ -149,7 +149,7 @@ function handle(req, res, next) {
 
 export function paymentProofStore() {
   return {
-    name: 'stayflow-payment-proof-store',
+    name: 'stayease-payment-proof-store',
     configureServer(server) {
       server.middlewares.use(handle);
     },

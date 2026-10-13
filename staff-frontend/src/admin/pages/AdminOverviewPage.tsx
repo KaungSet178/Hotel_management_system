@@ -214,7 +214,7 @@ export function AdminOverviewPage() {
               <div>
                 <div className="flex justify-between text-label-sm font-semibold text-on-surface">
                   <span className="flex items-center gap-1.5">
-                    <Globe className="h-3.5 w-3.5 text-[#0e2a4a]" /> Direct Online Web (StayFlow)
+                    <Globe className="h-3.5 w-3.5 text-[#0e2a4a]" /> Direct Online Web (StayEase)
                   </span>
                   <span className="text-[#0e2a4a] font-bold">
                     {metrics.onlineRevenue > 0

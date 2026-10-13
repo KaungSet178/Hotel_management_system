@@ -45,9 +45,9 @@ interface NotificationContextValue {
   broadcastEvent: (event: string, payload: Record<string, unknown>) => void;
 }
 
-const STORAGE_KEY = 'stayflow.staff.notifications.v2';
-const CROSS_TAB_CHANNEL_NAME = 'stayflow_live_cross_tab_channel';
-const BROADCAST_REALTIME_TOPIC = 'stayflow-live-broadcast';
+const STORAGE_KEY = 'stayease.staff.notifications.v2';
+const CROSS_TAB_CHANNEL_NAME = 'stayease_live_cross_tab_channel';
+const BROADCAST_REALTIME_TOPIC = 'stayease-live-broadcast';
 
 const initialDefaultNotifications: StaffNotification[] = [
   {
@@ -159,7 +159,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
     // 3. Storage event fallback
     try {
-      localStorage.setItem('stayflow.live_event_bus', JSON.stringify({ event, payload, ts: Date.now() }));
+      localStorage.setItem('stayease.live_event_bus', JSON.stringify({ event, payload, ts: Date.now() }));
     } catch {
       // ignore
     }
@@ -210,7 +210,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
     // 2. Window storage listener fallback
     const onStorage = (e: StorageEvent) => {
-      if (e.key === 'stayflow.live_event_bus' && e.newValue) {
+      if (e.key === 'stayease.live_event_bus' && e.newValue) {
         try {
           const { event, payload } = JSON.parse(e.newValue);
           if (event === 'NEW_BOOKING') {

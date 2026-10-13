@@ -128,7 +128,7 @@ export function VerifyEmailPage() {
             <div className="space-y-2">
               <h1 className="font-serif text-2xl font-bold text-ink">Email Verified Successfully!</h1>
               <p className="text-sm text-ink-soft">
-                Your email address is now confirmed. Your account is fully active and you can now complete room reservations at StayFlow.
+                Your email address is now confirmed. Your account is fully active and you can now complete room reservations at StayEase.
               </p>
             </div>
 
@@ -200,7 +200,7 @@ export function VerifyEmailPage() {
 
             <div className="pt-2">
               <Link to="/" className="text-xs font-semibold text-brand-700 hover:underline">
-                Return to StayFlow Home
+                Return to StayEase Home
               </Link>
             </div>
           </div>

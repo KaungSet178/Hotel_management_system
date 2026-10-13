@@ -86,7 +86,7 @@ export function LoginPage() {
             Grand Azure Resort & Spa
           </h1>
           <p className="mt-1 text-label-md text-white/60">
-            StayFlow Unified Staff & Executive Portal
+            StayEase Unified Staff & Executive Portal
           </p>
         </div>
 
@@ -226,7 +226,7 @@ export function LoginPage() {
         </div>
 
         <p className="mt-6 text-center text-label-xs text-white/35">
-          Grand Azure Resort & Spa • StayFlow v2.6 • Connected to Supabase
+          Grand Azure Resort & Spa • StayEase v2.6 • Connected to Supabase
         </p>
       </div>
     </div>

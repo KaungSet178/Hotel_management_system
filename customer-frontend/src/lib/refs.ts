@@ -47,7 +47,7 @@ export function generatePaymentReference(prefix: string): string {
 export function buildQrPayload(reference: string, checkIn: string): string {
   return JSON.stringify({
     v: 1,
-    type: 'stayflow-express-checkin',
+    type: 'stayease-express-checkin',
     ref: reference,
     token: `ci_${pick(ALPHA + NUM, 12)}`,
     ci: checkIn,

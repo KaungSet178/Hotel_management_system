@@ -41,11 +41,11 @@ export function Header() {
       )}
     >
       <Container className="flex h-16 items-center justify-between gap-4">
-        <Link to="/" className="group flex items-center gap-2" aria-label="StayFlow home">
+        <Link to="/" className="group flex items-center gap-2" aria-label="StayEase home">
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-700 text-white transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-105">
             <BedDouble className="h-5 w-5" aria-hidden="true" />
           </span>
-          <span className="text-lg font-semibold tracking-tight text-ink">StayFlow</span>
+          <span className="text-lg font-semibold tracking-tight text-ink">StayEase</span>
         </Link>
 
         <nav className="hidden items-center gap-1 lg:flex" aria-label="Primary">

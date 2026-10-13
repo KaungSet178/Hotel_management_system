@@ -24,11 +24,11 @@ export function Footer() {
       <Container className="py-14">
         <div className="grid gap-10 lg:grid-cols-4">
           <div className="lg:col-span-1">
-            <Link to="/" className="flex items-center gap-2" aria-label="StayFlow home">
+            <Link to="/" className="flex items-center gap-2" aria-label="StayEase home">
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-700 text-white">
                 <BedDouble className="h-5 w-5" aria-hidden="true" />
               </span>
-              <span className="text-lg font-semibold tracking-tight text-ink">StayFlow</span>
+              <span className="text-lg font-semibold tracking-tight text-ink">StayEase</span>
             </Link>
             <p className="mt-4 max-w-xs text-sm text-ink-soft">
               Modern boutique hospitality engineered for ultimate tranquility, discretion and effortless
@@ -93,8 +93,8 @@ export function Footer() {
               </li>
               <li className="flex gap-2">
                 <Mail className="mt-0.5 h-4 w-4 shrink-0 text-brand-500" aria-hidden="true" />
-                <a href="mailto:concierge@stayflow.example" className="hover:text-brand-700">
-                  concierge@stayflow.example
+                <a href="mailto:concierge@stayease.example" className="hover:text-brand-700">
+                  concierge@stayease.example
                 </a>
               </li>
             </ul>
@@ -102,7 +102,7 @@ export function Footer() {
         </div>
 
         <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-brand-900/8 pt-6 text-xs text-ink-mute sm:flex-row">
-          <p>© {new Date().getFullYear()} StayFlow Hospitality Solutions Ltd. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} StayEase Hospitality Solutions Ltd. All rights reserved.</p>
           <p>Currency: MMK (Myanmar Kyat) · Demo build</p>
         </div>
       </Container>

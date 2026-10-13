@@ -391,7 +391,7 @@ export function AdminFinancesPage() {
                     <td className="px-4 py-3.5">
                       <p className="font-semibold text-on-surface">{row.guest}</p>
                       <span className="text-[11px] text-on-surface-variant">
-                        {row.channel === 'WALK_IN' ? 'Walk-In Desk' : 'Online StayFlow'}
+                        {row.channel === 'WALK_IN' ? 'Walk-In Desk' : 'Online StayEase'}
                       </span>
                     </td>
                     <td className="px-4 py-3.5 text-right font-medium text-on-surface">

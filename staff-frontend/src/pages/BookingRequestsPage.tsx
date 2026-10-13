@@ -689,7 +689,7 @@ export function BookingRequestsPage() {
   return (
     <div className="space-y-6">
       <SectionTitle
-        eyebrow="StayFlow · Front Desk"
+        eyebrow="StayEase · Front Desk"
         title="Booking Requests & Payment Verification"
         description="Payment verification queue for online bookings with digital wallet & bank transfer slip verification."
         action={

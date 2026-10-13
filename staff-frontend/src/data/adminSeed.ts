@@ -120,7 +120,7 @@ export const initialChannelRecords: ChannelRecord[] = [
     clerkOrSource: 'Daw Nu Nu (Front Desk 01)',
   },
 
-  // Online Direct Reservations (StayFlow Web Guest App)
+  // Online Direct Reservations (StayEase Web Guest App)
   {
     id: 'ch-o-01',
     ref: 'SF-2026-9510',
@@ -137,7 +137,7 @@ export const initialChannelRecords: ChannelRecord[] = [
     totalAmount: 759000,
     paymentMethod: 'KBZPay Direct',
     paymentStatus: 'PAID',
-    clerkOrSource: 'StayFlow Web Portal',
+    clerkOrSource: 'StayEase Web Portal',
     leadTimeDays: 14,
     specialNotes: 'Wedding anniversary note requested.',
   },
@@ -157,7 +157,7 @@ export const initialChannelRecords: ChannelRecord[] = [
     totalAmount: 3250000,
     paymentMethod: 'Stripe Visa Checkout',
     paymentStatus: 'PAID',
-    clerkOrSource: 'StayFlow Web Portal',
+    clerkOrSource: 'StayEase Web Portal',
     leadTimeDays: 28,
     specialNotes: 'Strand Club privilege + airport limousine transfer.',
   },
@@ -177,7 +177,7 @@ export const initialChannelRecords: ChannelRecord[] = [
     totalAmount: 1850000,
     paymentMethod: 'Stripe Mastercard',
     paymentStatus: 'PAID',
-    clerkOrSource: 'StayFlow Mobile Web',
+    clerkOrSource: 'StayEase Mobile Web',
     leadTimeDays: 21,
   },
   {
@@ -196,7 +196,7 @@ export const initialChannelRecords: ChannelRecord[] = [
     totalAmount: 1020000,
     paymentMethod: 'WavePay Transfer',
     paymentStatus: 'AWAITING_REVIEW',
-    clerkOrSource: 'StayFlow Web Portal',
+    clerkOrSource: 'StayEase Web Portal',
     leadTimeDays: 7,
     specialNotes: 'Reassigned from 412 due to overlap.',
   },
@@ -216,7 +216,7 @@ export const initialChannelRecords: ChannelRecord[] = [
     totalAmount: 1550000,
     paymentMethod: 'Stripe Visa Checkout',
     paymentStatus: 'PAID',
-    clerkOrSource: 'StayFlow Web Portal',
+    clerkOrSource: 'StayEase Web Portal',
   },
   {
     id: 'ch-o-07',
@@ -234,7 +234,7 @@ export const initialChannelRecords: ChannelRecord[] = [
     totalAmount: 816000,
     paymentMethod: 'Stripe JCB Card',
     paymentStatus: 'PAID',
-    clerkOrSource: 'StayFlow Web Portal',
+    clerkOrSource: 'StayEase Web Portal',
     leadTimeDays: 19,
   },
 ];

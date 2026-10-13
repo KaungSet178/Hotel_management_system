@@ -1073,7 +1073,7 @@ async function verifyPaymentProof(bookingId, approved, notes = '', user = null) 
 
     if (isConfigured && supabase) {
       try {
-        supabase.channel('stayflow-live-broadcast').send({
+        supabase.channel('stayease-live-broadcast').send({
           type: 'broadcast',
           event: 'BOOKING_APPROVED',
           payload: {
@@ -1118,7 +1118,7 @@ async function verifyPaymentProof(bookingId, approved, notes = '', user = null) 
       });
 
       try {
-        supabase.channel('stayflow-live-broadcast').send({
+        supabase.channel('stayease-live-broadcast').send({
           type: 'broadcast',
           event: 'BOOKING_REJECTED',
           payload: {

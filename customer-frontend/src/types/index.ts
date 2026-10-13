@@ -1,5 +1,5 @@
 /**
- * Domain models for the StayFlow customer frontend.
+ * Domain models for the StayEase customer frontend.
  *
  * These types describe the entities the UI works with. They are intentionally
  * backend-agnostic: the same shapes are used by the mock service layer and the

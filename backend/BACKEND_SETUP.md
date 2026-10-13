@@ -16,7 +16,7 @@ backend/
 │   ├── checkSupabase.js          # Live database diagnostic script (tables, RPCs, connectivity)
 │   ├── test-suite.js             # Automated end-to-end backend test runner (46/46 passing)
 │   ├── routes/
-│   │   └── customerRoutes.js     # 15 Customer-facing REST endpoints (StayFlow contracts)
+│   │   └── customerRoutes.js     # 15 Customer-facing REST endpoints (StayEase contracts)
 │   ├── middleware/
 │   │   ├── auth.js               # Supabase JWT token verification
 │   │   ├── roles.js              # RBAC role guards (requireRole)
@@ -142,7 +142,7 @@ npx supabase functions deploy cancellation-job
 
 The backend supports two distinct authentication paths:
 
-1. **Anonymous Customer Guest Flow (StayFlow UI):**
+1. **Anonymous Customer Guest Flow (StayEase UI):**
    - Guests do not need a pre-existing user account to book.
    - When a booking is finalized, the backend generates:
      - A booking reference (e.g. `LUX-8491`)

@@ -199,7 +199,7 @@ function SignedOutPrompt({ onSignIn }: { onSignIn: () => void }) {
         <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-lavender-100 text-brand-700">
           <UserRound className="h-7 w-7" aria-hidden="true" />
         </span>
-        <h1 className="mt-4 text-2xl font-bold tracking-tight text-ink">Your StayFlow profile</h1>
+        <h1 className="mt-4 text-2xl font-bold tracking-tight text-ink">Your StayEase profile</h1>
         <p className="mt-2 text-sm text-ink-soft">
           Sign in to trace every reservation, open folios and manage your stay — all in one place. Choose Google,
           phone number or email.

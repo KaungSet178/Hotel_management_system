@@ -256,7 +256,7 @@ export function GuestServicesPage() {
   return (
     <div className="space-y-6">
       <SectionTitle
-        eyebrow="StayFlow · Front Desk"
+        eyebrow="StayEase · Front Desk"
         title="Guest Services"
         description="Housekeeping, concierge, maintenance and bell-captain requests flowing across the team."
         action={

@@ -164,7 +164,7 @@ export function AdminChannelsPage() {
         <div className="flex flex-col justify-between rounded-2xl border border-outline-variant/50 border-l-4 border-l-[#0e2a4a] bg-surface-container-lowest p-5 shadow-xs">
           <div className="flex items-center justify-between">
             <p className="text-label-sm font-semibold tracking-wide text-[#0e2a4a] uppercase">
-              StayFlow Direct Web App
+              StayEase Direct Web App
             </p>
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#0e2a4a] text-[#89f5e7]">
               <Globe className="h-4 w-4" />
@@ -246,7 +246,7 @@ export function AdminChannelsPage() {
               )}
             >
               <Globe className="h-3 w-3 text-[#89f5e7]" />
-              <span>StayFlow Online Direct</span>
+              <span>StayEase Online Direct</span>
               <span
                 className={cn(
                   'rounded-full px-1.5 py-0.2 text-[10px] font-bold',

@@ -36,7 +36,7 @@ import type { Folio } from '@/types';
 
 function folioReceiptText(folio: Folio, total: number, outstanding: number): string {
   return [
-    'StayFlow · Yangon Heritage — Check-out Folio',
+    'StayEase · Yangon Heritage — Check-out Folio',
     `Guest: ${folio.guestName}`,
     `Room: ${folio.room} · ${folio.roomCategory}`,
     `Stay: ${dateRange(folio.checkIn, folio.checkOut)} · ${folio.nights} night(s)`,
@@ -45,7 +45,7 @@ function folioReceiptText(folio: Folio, total: number, outstanding: number): str
     `Taxes & Service Charges: ${mmk(folio.taxes)}`,
     `Total: ${mmk(total)}`,
     `Balance outstanding: ${mmk(outstanding)}`,
-    'Thank you for staying with StayFlow.',
+    'Thank you for staying with StayEase.',
   ].join('\n');
 }
 
@@ -116,7 +116,7 @@ export function CheckOutPage() {
   return (
     <div className="space-y-6">
       <SectionTitle
-        eyebrow="StayFlow · Front Desk"
+        eyebrow="StayEase · Front Desk"
         title="Check-out"
         description="Settle the folio, reconcile incidentals and release the key card for Yangon Heritage."
         action={

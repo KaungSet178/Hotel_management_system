@@ -39,7 +39,7 @@ interface BookingContextValue {
   resetDraft: () => void;
 }
 
-const STORAGE_KEY = 'stayflow.booking-draft.v1';
+const STORAGE_KEY = 'stayease.booking-draft.v1';
 
 const BookingContext = createContext<BookingContextValue | null>(null);
 
