@@ -3,11 +3,13 @@ import {
   BedDouble,
   CheckCircle2,
   RefreshCw,
+  Search,
   Soup,
   Sparkles,
   Tag,
   Users,
   Wrench,
+  X,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { addDays, mmk, todayIso } from '@/lib/format';
@@ -25,7 +27,7 @@ import {
   TextInput,
   Toggle,
 } from '@/components/ui';
-import type { Room } from '@/types';
+import type { Room, RoomStatus } from '@/types';
 
 function RoomCard({
   room,
@@ -143,10 +145,14 @@ function RoomCard({
   );
 }
 
+type StatusFilter = 'ALL' | RoomStatus;
+
 export function RoomAvailabilityPage() {
   const { rooms, addWalkInBooking, walkIn, refresh } = useAppStore();
   const toast = useToast();
 
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
   const [selected, setSelected] = useState<string | undefined>();
   const [guestName, setGuestName] = useState('');
   const [adults, setAdults] = useState('2');
@@ -166,8 +172,42 @@ export function RoomAvailabilityPage() {
     [rooms],
   );
 
+  // Filter and sort: AVAILABLE rooms displayed at the FIRST!
+  const filteredAndSortedRooms = useMemo(() => {
+    // 1. Filter by status & search
+    const filtered = rooms.filter((room) => {
+      if (statusFilter !== 'ALL' && room.status !== statusFilter) {
+        return false;
+      }
+      if (searchQuery.trim()) {
+        const q = searchQuery.trim().toLowerCase();
+        const matchNum = room.number.toLowerCase().includes(q);
+        const matchCat = room.category.toLowerCase().includes(q);
+        const matchGuest = room.guestName?.toLowerCase().includes(q) ?? false;
+        if (!matchNum && !matchCat && !matchGuest) return false;
+      }
+      return true;
+    });
+
+    // 2. Sort: AVAILABLE rooms ALWAYS FIRST, followed by RESERVED, OCCUPIED, CLEANING, MAINTENANCE
+    const statusPriority: Record<RoomStatus, number> = {
+      AVAILABLE: 0,
+      RESERVED: 1,
+      OCCUPIED: 2,
+      CLEANING: 3,
+      MAINTENANCE: 4,
+    };
+
+    return [...filtered].sort((a, b) => {
+      const priorityDiff = (statusPriority[a.status] ?? 99) - (statusPriority[b.status] ?? 99);
+      if (priorityDiff !== 0) return priorityDiff;
+      return a.number.localeCompare(b.number, undefined, { numeric: true });
+    });
+  }, [rooms, statusFilter, searchQuery]);
+
   const chosen =
     rooms.find((r) => r.number === selected && r.status === 'AVAILABLE') ??
+    filteredAndSortedRooms.find((r) => r.status === 'AVAILABLE') ??
     rooms.find((r) => r.status === 'AVAILABLE');
 
   const nightCount = Math.max(1, Number(nights) || 1);
@@ -197,7 +237,7 @@ export function RoomAvailabilityPage() {
       <SectionTitle
         eyebrow="StayFlow · Front Desk"
         title="Room Availability & Walk-in Booking"
-        description="Live inventory for Yangon Heritage with direct desk booking. Select an available room to attach it to the walk-in folio."
+        description="Live inventory for Yangon Heritage with direct desk booking. Available suites are displayed first. Use status filters to inspect live occupancy and turnover."
         action={
           <Button
             variant="outline"
@@ -213,33 +253,76 @@ export function RoomAvailabilityPage() {
         }
       />
 
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="rounded-full bg-secondary-container px-3 py-1 text-label-sm font-medium text-on-secondary-container">
-          {counts.available} Available
-        </span>
-        <span className="rounded-full bg-tertiary-fixed px-3 py-1 text-label-sm font-medium text-on-tertiary-fixed-variant">
-          {counts.occupied} Occupied
-        </span>
-        <span className="rounded-full bg-primary-container px-3 py-1 text-label-sm font-medium text-white">
-          {counts.reserved} Reserved
-        </span>
-        {counts.cleaning > 0 && (
-          <span className="rounded-full bg-amber-100 px-3 py-1 text-label-sm font-medium text-amber-800 border border-amber-300">
-            {counts.cleaning} Cleaning
+      {/* Interactive Status Filter Tabs & Search Toolbar */}
+      <div className="flex flex-col gap-3 rounded-2xl border border-outline-variant/50 bg-surface-container-lowest p-3.5 shadow-xs sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-1.5 text-label-sm font-semibold">
+          {[
+            { id: 'ALL' as const, label: 'All Rooms', count: rooms.length, dot: undefined },
+            { id: 'AVAILABLE' as const, label: 'Available', count: counts.available, dot: 'bg-emerald-500' },
+            { id: 'OCCUPIED' as const, label: 'Occupied', count: counts.occupied, dot: 'bg-[#0e2a4a]' },
+            { id: 'RESERVED' as const, label: 'Reserved', count: counts.reserved, dot: 'bg-sky-500' },
+            { id: 'CLEANING' as const, label: 'Cleaning', count: counts.cleaning, dot: 'bg-amber-400' },
+            { id: 'MAINTENANCE' as const, label: 'Maintenance', count: counts.maintenance, dot: 'bg-red-500' },
+          ].map((tab) => {
+            const isActive = statusFilter === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setStatusFilter(tab.id)}
+                className={cn(
+                  'flex items-center gap-1.5 rounded-xl px-3 py-1.5 transition cursor-pointer',
+                  isActive
+                    ? 'bg-[#0e2a4a] text-white shadow-xs'
+                    : 'bg-surface-container-low text-on-surface-variant hover:text-on-surface hover:bg-surface-container',
+                )}
+              >
+                {tab.dot && <span className={cn('h-2 w-2 rounded-full', tab.dot)} />}
+                <span>{tab.label}</span>
+                <span
+                  className={cn(
+                    'rounded-full px-1.5 py-0.2 text-[11px] font-bold',
+                    isActive
+                      ? 'bg-white/20 text-white'
+                      : 'bg-surface-container-highest text-on-surface-variant',
+                  )}
+                >
+                  {tab.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="relative min-w-[200px] flex-1 sm:w-56">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-on-surface-variant" />
+            <TextInput
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search suite # or type…"
+              className="h-8.5 rounded-xl pl-9 text-body-sm"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-on-surface-variant hover:text-on-surface"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+          <span className="hidden text-label-sm font-medium text-on-surface-variant xl:block whitespace-nowrap">
+            {LOCALE.property} · {LOCALE.deskNumber}
           </span>
-        )}
-        <span className="rounded-full bg-error-container px-3 py-1 text-label-sm font-medium text-on-error-container">
-          {counts.maintenance} Maintenance
-        </span>
-        <span className="ml-auto hidden text-label-md font-medium text-on-surface-variant sm:block">
-          {LOCALE.property} · {LOCALE.deskNumber}
-        </span>
+        </div>
       </div>
 
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
         <div className="min-w-0 flex-1 space-y-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {rooms.map((room) => (
+            {filteredAndSortedRooms.map((room) => (
               <RoomCard
                 key={room.id}
                 room={room}
@@ -247,6 +330,25 @@ export function RoomAvailabilityPage() {
                 onSelect={(n) => setSelected((prev) => (prev === n ? undefined : n))}
               />
             ))}
+
+            {filteredAndSortedRooms.length === 0 && (
+              <div className="col-span-full rounded-2xl border border-dashed border-outline-variant/60 bg-surface-container-low p-8 text-center">
+                <BedDouble className="mx-auto h-8 w-8 text-on-surface-variant/40" />
+                <p className="mt-2 text-label-md font-semibold text-on-surface">No suites matching this filter</p>
+                <p className="mt-1 text-body-sm text-on-surface-variant">Try selecting "All Rooms" or clearing your search query.</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-4"
+                  onClick={() => {
+                    setStatusFilter('ALL');
+                    setSearchQuery('');
+                  }}
+                >
+                  Reset Filter
+                </Button>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-3 rounded-xl border border-secondary/20 bg-secondary-container/30 px-4 py-3">
