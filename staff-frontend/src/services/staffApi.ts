@@ -180,6 +180,7 @@ export function mapSupabaseServiceRequestToUi(s: any, roomsMap?: Map<string, any
     ago: formatTimeAgo(s.created_at),
     quote: s.delivery_time ? `Scheduled: ${s.delivery_time}` : 'Standard Service',
     urgency: s.priority === 'URGENT' ? 'URGENT' : 'NORMAL',
+    charge: Number(s.charge || s.cost || 0),
     assignee: s.assigned_to ? 'Staff Assigned' : undefined,
     state,
   };
