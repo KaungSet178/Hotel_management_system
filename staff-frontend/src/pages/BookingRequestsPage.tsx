@@ -10,6 +10,7 @@ import {
   KeyRound,
   Link2,
   Printer,
+  RefreshCw,
   SendHorizontal,
   ShieldCheck,
   UserCheck,
@@ -257,6 +258,28 @@ function SlipModal({ req, onClose }: { req: BookingRequest | null; onClose: () =
               <p className="mt-0.5 font-medium text-on-surface">{req.slip.timestamp}</p>
             </div>
           </div>
+          {req.slip.receiptUrl && (
+            <div className="overflow-hidden rounded-xl border border-outline-variant/60 bg-surface-container-low">
+              <div className="flex items-center justify-between border-b border-outline-variant/40 px-3 py-1.5 text-label-sm font-medium text-on-surface-variant">
+                <span>Deposit Proof Screenshot</span>
+                <a
+                  href={req.slip.receiptUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs font-semibold text-primary hover:underline"
+                >
+                  Open Full Image
+                </a>
+              </div>
+              <div className="flex max-h-64 items-center justify-center p-2 bg-black/5">
+                <img
+                  src={req.slip.receiptUrl}
+                  alt="Payment deposit receipt proof"
+                  className="max-h-56 max-w-full rounded-md object-contain shadow-xs"
+                />
+              </div>
+            </div>
+          )}
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={handleDownload}>
               <Download className="h-3.5 w-3.5" />
@@ -513,7 +536,7 @@ const AUDIT_ROWS = [
 ] as const;
 
 export function BookingRequestsPage() {
-  const { requests, confirmRequest, setRequestState } = useAppStore();
+  const { requests, confirmRequest, setRequestState, refresh } = useAppStore();
   const toast = useToast();
 
   const [activeRef, setActiveRef] = useState<string | null>('#SF-2025-9510');
@@ -615,10 +638,23 @@ export function BookingRequestsPage() {
         title="Booking Requests & Payment Verification"
         description="Deposits queue with KBZPay slip verification, pay-at-hotel confirmation and room-conflict resolution."
         action={
-          <Button variant="outline" size="sm" onClick={handleExportQueue}>
-            <Download className="h-4 w-4" />
-            Export Queue
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                await refresh();
+                toast.info('Requests queue synced with Supabase.');
+              }}
+            >
+              <RefreshCw className="h-4 w-4" />
+              Refresh
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleExportQueue}>
+              <Download className="h-4 w-4" />
+              Export Queue
+            </Button>
+          </div>
         }
       />
 

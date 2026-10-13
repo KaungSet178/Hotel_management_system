@@ -17,7 +17,9 @@ const {
   createServiceRequest,
   updateServiceRequestStatus,
   runCancellationCheck,
-  markBookingAsPaid
+  markBookingAsPaid,
+  verifyPaymentProof,
+  createWalkInBooking
 } = require('./supabaseClient');
 const { createSecureQrToken, generateQrDataUrl, generateInRoomQr } = require('./qrService');
 const { startCancellationJob } = require('./cancellationJob');
@@ -664,6 +666,36 @@ app.post('/api/check-out/:id', requireAuth, requireRole('RECEPTIONIST', 'ADMIN')
   }
 });
 
+// 5b. Verify Payment Proof (Deposit Approval / Rejection by Staff)
+app.patch('/api/bookings/:id/payment-proof/verify', requireAuth, requireRole('RECEPTIONIST', 'ADMIN'), async (req, res) => {
+  try {
+    const { approved = true, notes = '' } = req.body;
+    const result = await verifyPaymentProof(req.params.id, Boolean(approved), notes, req.user);
+    const message = approved
+      ? `Payment verified for booking ${result.booking_reference}. Suite locked!`
+      : `Payment rejected for booking ${result.booking_reference}. Reservation cancelled.`;
+    res.json({ success: true, message, data: result });
+  } catch (err) {
+    const statusCode = err.code === 'BOOKING_NOT_FOUND' ? 404 : 400;
+    res.status(statusCode).json({ success: false, error: err.message });
+  }
+});
+
+// 5c. Counter Walk-In Direct Booking (Front Desk)
+app.post('/api/walk-in/book', requireAuth, requireRole('RECEPTIONIST', 'ADMIN'), async (req, res) => {
+  try {
+    const result = await createWalkInBooking(req.body, req.user);
+    res.status(201).json({
+      success: true,
+      message: `Walk-in guest ${result.guest_name} registered for Room ${result.room_number}.`,
+      data: result
+    });
+  } catch (err) {
+    const statusCode = err.code === 'ROOM_NOT_FOUND' ? 404 : 400;
+    res.status(statusCode).json({ success: false, error: err.message });
+  }
+});
+
 // 6. In-Room Real-time Service Requests
 app.get('/api/service-requests', requireAuth, async (req, res) => {
   try {
@@ -755,10 +787,12 @@ app.post('/api/demo/simulate-expired-booking', requireAuth, requireRole('ADMIN')
     };
 
     if (isConfigured && supabase) {
-      const validGuestId = (req.user && req.user.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(req.user.id))
-        ? req.user.id
-        : null;
-      await supabase.from('bookings').insert({
+      let validGuestId = null;
+      if (req.user && req.user.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(req.user.id)) {
+        const { data: p } = await supabase.from('profiles').select('id').eq('id', req.user.id).maybeSingle();
+        if (p) validGuestId = p.id;
+      }
+      const { error: insErr } = await supabase.from('bookings').insert({
         id: expiredBooking.id,
         booking_reference: expiredBooking.booking_reference,
         guest_id: validGuestId,

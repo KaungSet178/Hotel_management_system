@@ -126,6 +126,13 @@ function RoomCard({
         </div>
       )}
 
+      {room.status === 'CLEANING' && (
+        <div className="mt-3 flex items-center gap-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2 text-amber-800 dark:text-amber-300">
+          <RefreshCw className="h-3.5 w-3.5 animate-spin text-amber-600" />
+          <p className="text-label-sm font-medium">Housekeeping turnover in progress</p>
+        </div>
+      )}
+
       {room.status === 'MAINTENANCE' && room.workOrder && (
         <div className="mt-3 flex items-start gap-1.5 rounded-lg bg-error-container px-3 py-2 text-on-error-container">
           <Wrench className="mt-0.5 h-3.5 w-3.5 shrink-0" />
@@ -137,7 +144,7 @@ function RoomCard({
 }
 
 export function RoomAvailabilityPage() {
-  const { rooms, addWalkInBooking, walkIn } = useAppStore();
+  const { rooms, addWalkInBooking, walkIn, refresh } = useAppStore();
   const toast = useToast();
 
   const [selected, setSelected] = useState<string | undefined>();
@@ -153,6 +160,7 @@ export function RoomAvailabilityPage() {
       available: rooms.filter((r) => r.status === 'AVAILABLE').length,
       occupied: rooms.filter((r) => r.status === 'OCCUPIED').length,
       reserved: rooms.filter((r) => r.status === 'RESERVED').length,
+      cleaning: rooms.filter((r) => r.status === 'CLEANING').length,
       maintenance: rooms.filter((r) => r.status === 'MAINTENANCE').length,
     }),
     [rooms],
@@ -194,7 +202,10 @@ export function RoomAvailabilityPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => toast.info(`Inventory synced · ${rooms.length} rooms live`)}
+            onClick={async () => {
+              await refresh();
+              toast.info(`Inventory synced with Supabase · ${rooms.length} rooms live`);
+            }}
           >
             <RefreshCw className="h-4 w-4" />
             Refresh
@@ -212,6 +223,11 @@ export function RoomAvailabilityPage() {
         <span className="rounded-full bg-primary-container px-3 py-1 text-label-sm font-medium text-white">
           {counts.reserved} Reserved
         </span>
+        {counts.cleaning > 0 && (
+          <span className="rounded-full bg-amber-100 px-3 py-1 text-label-sm font-medium text-amber-800 border border-amber-300">
+            {counts.cleaning} Cleaning
+          </span>
+        )}
         <span className="rounded-full bg-error-container px-3 py-1 text-label-sm font-medium text-on-error-container">
           {counts.maintenance} Maintenance
         </span>

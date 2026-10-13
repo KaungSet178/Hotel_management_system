@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import type {
   AuditLogRecord,
@@ -10,10 +10,13 @@ import type {
 import { initialRooms } from '@/data/seed';
 import { initialAuditLogs, initialChannelRecords } from '@/data/adminSeed';
 import { useAuth } from '@/auth';
+import { staffApi } from '@/services/staffApi';
 
 interface AdminStoreType {
   // Rooms
   rooms: Room[];
+  loading: boolean;
+  refresh: () => Promise<void>;
   updateRoom: (id: string, updates: Partial<Room>) => void;
   addRoom: (newRoom: Omit<Room, 'id'>) => Room;
   toggleMaintenance: (id: string, workOrder?: string) => void;
@@ -43,6 +46,49 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
   const [channelRecords, setChannelRecords] = useState<ChannelRecord[]>(initialChannelRecords);
   const [auditLogs, setAuditLogs] = useState<AuditLogRecord[]>(initialAuditLogs);
   const [selectedMonth, setSelectedMonth] = useState<string>('2026-10');
+  const [loading, setLoading] = useState(true);
+
+  // Initial fetch and live refresh function
+  const refresh = useCallback(async () => {
+    try {
+      const [r, ch, al] = await Promise.all([
+        staffApi.fetchRooms(),
+        staffApi.fetchChannelRecords(),
+        staffApi.fetchAuditLogs(),
+      ]);
+      setRooms(r);
+      setChannelRecords(ch);
+      setAuditLogs(al);
+    } catch (err) {
+      console.warn('Admin store data sync error:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Sync with live Supabase on mount and listen to realtime table changes
+  useEffect(() => {
+    let mounted = true;
+
+    refresh();
+
+    const unsubscribe = staffApi.subscribeToChanges((table) => {
+      if (!mounted) return;
+      if (table === 'rooms') {
+        staffApi.fetchRooms().then((r) => mounted && setRooms(r));
+      } else if (table === 'bookings') {
+        staffApi.fetchChannelRecords().then((ch) => mounted && setChannelRecords(ch));
+        staffApi.fetchRooms().then((r) => mounted && setRooms(r));
+      } else if (table === 'audit_logs') {
+        staffApi.fetchAuditLogs().then((al) => mounted && setAuditLogs(al));
+      }
+    });
+
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
+  }, [refresh]);
 
   // Helper to add audit log
   const addAuditLog = useCallback(
@@ -53,6 +99,16 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
         timestamp: new Date().toISOString(),
       };
       setAuditLogs((prev) => [newEntry, ...prev]);
+
+      staffApi.logAudit({
+        actor: entry.actor,
+        actorRole: entry.actorRole,
+        action: entry.action,
+        entityType: entry.entityType,
+        entityId: entry.entityId,
+        details: entry.details,
+        ipAddress: entry.ipAddress,
+      }).catch((err) => console.warn('addAuditLog backend error:', err));
     },
     [],
   );
@@ -78,27 +134,37 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
           return r;
         }),
       );
+
+      staffApi.updateRoomPricing(id, updates).then(() => {
+        staffApi.fetchRooms().then(setRooms);
+      }).catch((err) => console.error('updateRoom backend error:', err));
     },
     [addAuditLog, user],
   );
 
   const addRoom = useCallback(
     (newRoomData: Omit<Room, 'id'>): Room => {
-      const id = `room-${newRoomData.number.toLowerCase()}-${Date.now().toString().slice(-4)}`;
+      const tempId = `room-${newRoomData.number.toLowerCase()}-${Date.now().toString().slice(-4)}`;
       const newRoom: Room = {
         ...newRoomData,
-        id,
+        id: tempId,
       };
       setRooms((prev) => [...prev, newRoom]);
+
       addAuditLog({
         actor: user?.name || 'Administrator',
         actorRole: user?.role || 'ADMIN',
         action: 'ROOM_CREATED',
         entityType: 'rooms',
-        entityId: id,
+        entityId: tempId,
         details: `Created new Room ${newRoom.number} (${newRoom.category}) at ${newRoom.pricePerNight.toLocaleString()} MMK/night on floor ${newRoom.floor}.`,
         ipAddress: '192.168.1.10 (Management Suite)',
       });
+
+      staffApi.addRoom(newRoomData).then(() => {
+        staffApi.fetchRooms().then(setRooms);
+      }).catch((err) => console.error('addRoom backend error:', err));
+
       return newRoom;
     },
     [addAuditLog, user],
@@ -106,11 +172,13 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
 
   const toggleMaintenance = useCallback(
     (id: string, workOrder?: string) => {
+      const target = rooms.find((r) => r.id === id);
+      const isCurrentlyMaint = target?.status === 'MAINTENANCE';
+      const nextStatus: RoomStatus = isCurrentlyMaint ? 'AVAILABLE' : 'MAINTENANCE';
+
       setRooms((prev) =>
         prev.map((r) => {
           if (r.id === id) {
-            const isCurrentlyMaint = r.status === 'MAINTENANCE';
-            const nextStatus: RoomStatus = isCurrentlyMaint ? 'AVAILABLE' : 'MAINTENANCE';
             const updated: Room = {
               ...r,
               status: nextStatus,
@@ -132,8 +200,12 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
           return r;
         }),
       );
+
+      staffApi.updateRoomStatus(id, nextStatus).then(() => {
+        staffApi.fetchRooms().then(setRooms);
+      }).catch((err) => console.error('toggleMaintenance backend error:', err));
     },
-    [addAuditLog, user],
+    [rooms, addAuditLog, user],
   );
 
   const deleteRoom = useCallback(
@@ -151,6 +223,10 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
           ipAddress: '192.168.1.10 (Management Suite)',
         });
       }
+
+      staffApi.deleteRoom(id).then(() => {
+        staffApi.fetchRooms().then(setRooms);
+      }).catch((err) => console.error('deleteRoom backend error:', err));
     },
     [rooms, addAuditLog, user],
   );
@@ -166,6 +242,7 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
         ref: `${prefix}-2026-${seq}`,
       };
       setChannelRecords((prev) => [newRecord, ...prev]);
+
       addAuditLog({
         actor: user?.name || 'Front Desk Staff',
         actorRole: user?.role || 'RECEPTIONIST',
@@ -175,6 +252,25 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
         details: `${recordData.guestName} registered via ${recordData.channel} for Room ${recordData.roomNumber} (${recordData.totalAmount.toLocaleString()} MMK).`,
         ipAddress: '192.168.1.42 (Front Desk)',
       });
+
+      if (recordData.channel === 'WALK_IN') {
+        staffApi.createWalkInBooking({
+          guestName: recordData.guestName,
+          roomNumber: recordData.roomNumber,
+          phone: recordData.phone,
+          nrc: recordData.nrcOrPassport,
+          nights: recordData.nights,
+          amount: recordData.totalAmount,
+          paymentMethod: recordData.paymentMethod,
+          clerkName: recordData.clerkOrSource || user?.name,
+        }, user).then(() => {
+          Promise.all([staffApi.fetchChannelRecords(), staffApi.fetchRooms()]).then(([ch, r]) => {
+            setChannelRecords(ch);
+            setRooms(r);
+          });
+        }).catch((err) => console.error('createWalkInBooking error:', err));
+      }
+
       return newRecord;
     },
     [addAuditLog, user],
@@ -182,14 +278,13 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
 
   // 24h Policy Sweep
   const runCancellationPolicySweep = useCallback(() => {
-    // Look for pending unpaid records with checkIn passed or unconfirmed
-    const now = new Date();
+    // Optimistic cancellation
     let cancelled = 0;
+    const now = new Date();
 
     setChannelRecords((prev) =>
       prev.map((rec) => {
         if (rec.paymentStatus === 'PENDING' && rec.paymentMethod === 'PAY_AT_HOTEL') {
-          // If checkin is within 24h or expired
           cancelled += 1;
           return {
             ...rec,
@@ -200,6 +295,19 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
         return rec;
       }),
     );
+
+    // Call backend API gateway sweep
+    staffApi.runCancellationSweep().then(() => {
+      Promise.all([
+        staffApi.fetchChannelRecords(),
+        staffApi.fetchRooms(),
+        staffApi.fetchAuditLogs(),
+      ]).then(([ch, r, al]) => {
+        setChannelRecords(ch);
+        setRooms(r);
+        setAuditLogs(al);
+      });
+    }).catch((err) => console.error('runCancellationSweep error:', err));
 
     addAuditLog({
       actor: user?.name || 'SYSTEM_RUNNER',
@@ -285,6 +393,8 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       rooms,
+      loading,
+      refresh,
       updateRoom,
       addRoom,
       toggleMaintenance,
@@ -301,6 +411,8 @@ export function AdminStoreProvider({ children }: { children: ReactNode }) {
     }),
     [
       rooms,
+      loading,
+      refresh,
       updateRoom,
       addRoom,
       toggleMaintenance,

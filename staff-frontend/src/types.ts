@@ -1,4 +1,4 @@
-export type RoomStatus = 'AVAILABLE' | 'OCCUPIED' | 'RESERVED' | 'MAINTENANCE';
+export type RoomStatus = 'AVAILABLE' | 'OCCUPIED' | 'CLEANING' | 'RESERVED' | 'MAINTENANCE';
 
 export interface Room {
   id: string;
@@ -78,6 +78,8 @@ export interface PaymentSlip {
   payer: string;
   recipient: string;
   timestamp: string;
+  receiptUrl?: string;
+  fileName?: string;
 }
 
 export type ServiceState = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED';

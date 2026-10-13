@@ -866,6 +866,192 @@ async function markBookingAsPaid(bookingId, paymentDetails = {}) {
   return booking;
 }
 
+/**
+ * Verify payment proof slip (approve or reject by receptionist)
+ */
+async function verifyPaymentProof(bookingId, approved, notes = '', user = null) {
+  let booking = memoryStore.bookings.find(b =>
+    b.id === bookingId || b.booking_reference === bookingId
+  );
+
+  if (!booking && isConfigured && supabase) {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bookingId);
+    let query = supabase.from('bookings').select('*');
+    if (isUuid) {
+      query = query.or(`id.eq.${bookingId},booking_reference.eq.${bookingId}`);
+    } else {
+      query = query.eq('booking_reference', bookingId);
+    }
+    const { data } = await query.maybeSingle();
+    if (data) booking = data;
+  }
+
+  if (!booking) {
+    const err = new Error(`Booking "${bookingId}" not found.`);
+    err.code = 'BOOKING_NOT_FOUND';
+    throw err;
+  }
+
+  const actorName = user?.full_name || user?.name || 'Front Desk Staff';
+  const now = new Date().toISOString();
+
+  if (approved) {
+    booking.payment_status = 'PAID';
+    booking.booking_status = 'CONFIRMED';
+    booking.auto_cancel_at = null;
+    booking.updated_at = now;
+
+    if (isConfigured && supabase) {
+      await supabase.from('bookings').update({
+        payment_status: 'PAID',
+        booking_status: 'CONFIRMED',
+        auto_cancel_at: null,
+        special_notes: (booking.special_notes ? booking.special_notes + ' ' : '') + `[Payment slip approved by ${actorName}]`,
+        updated_at: now
+      }).eq('id', booking.id);
+
+      await supabase.from('audit_logs').insert({
+        actor_id: user?.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(user.id) ? user.id : null,
+        actor_role: user?.role || 'RECEPTIONIST',
+        action: 'PAYMENT_PROOF_APPROVED',
+        entity_type: 'bookings',
+        entity_id: booking.id,
+        details: {
+          reference: booking.booking_reference,
+          guest_name: booking.guest_name,
+          amount: booking.total_amount,
+          notes,
+          verified_by: actorName
+        }
+      });
+    }
+
+    realtimeBus.emit('booking:paid', booking);
+    realtimeBus.emit('booking:updated', booking);
+  } else {
+    booking.booking_status = 'CANCELLED';
+    booking.updated_at = now;
+
+    if (isConfigured && supabase) {
+      await supabase.from('bookings').update({
+        booking_status: 'CANCELLED',
+        special_notes: (booking.special_notes ? booking.special_notes + ' ' : '') + `[Payment slip rejected by ${actorName}: ${notes || 'Unverified'}]`,
+        updated_at: now
+      }).eq('id', booking.id);
+
+      await supabase.from('audit_logs').insert({
+        actor_id: user?.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(user.id) ? user.id : null,
+        actor_role: user?.role || 'RECEPTIONIST',
+        action: 'PAYMENT_PROOF_REJECTED',
+        entity_type: 'bookings',
+        entity_id: booking.id,
+        details: {
+          reference: booking.booking_reference,
+          guest_name: booking.guest_name,
+          reason: notes,
+          rejected_by: actorName
+        }
+      });
+    }
+
+    realtimeBus.emit('booking:cancelled', booking);
+    realtimeBus.emit('booking:updated', booking);
+  }
+
+  return booking;
+}
+
+/**
+ * Register walk-in booking directly from front-desk counter
+ */
+async function createWalkInBooking(walkInData, user = null) {
+  const {
+    room_id,
+    room_number,
+    guest_name,
+    guest_phone,
+    guest_nrc_passport,
+    check_in_date,
+    check_out_date,
+    total_amount,
+    payment_method = 'PAY_AT_HOTEL',
+    payment_status = 'PAID',
+    special_notes = ''
+  } = walkInData;
+
+  const rooms = await getRooms();
+  const room = rooms.find(r => r.id === room_id || r.room_number === room_number);
+  if (!room) {
+    const err = new Error('Room not found');
+    err.code = 'ROOM_NOT_FOUND';
+    throw err;
+  }
+
+  const randomSuffix = `${Math.floor(1000 + Math.random() * 9000)}`;
+  const booking_reference = `WI-2026-${randomSuffix}`;
+  const folio_id = `SF-2026-${randomSuffix}`;
+  const pin = `${Math.floor(1000 + Math.random() * 9000)}`;
+  const { createSecureQrToken } = require('./qrService');
+  const qr_token = createSecureQrToken(require('crypto').randomUUID(), booking_reference);
+
+  const clerkName = user?.full_name || user?.name || 'Daw Nu Nu (Front Desk 01)';
+  const now = new Date().toISOString();
+
+  let newBooking = {
+    id: require('crypto').randomUUID(),
+    booking_reference,
+    guest_name,
+    guest_email: `walkin.${randomSuffix}@hotel.internal`,
+    guest_phone: guest_phone || '',
+    room_id: room.id,
+    room_number: room.room_number,
+    check_in_date,
+    check_out_date,
+    total_amount: Number(total_amount),
+    payment_method,
+    payment_status,
+    booking_status: 'CHECKED_IN',
+    checked_in_at: now,
+    qr_token,
+    folio_id,
+    pin,
+    special_notes: (special_notes ? special_notes + ' ' : '') + `[Counter walk-in registered by ${clerkName}]`,
+    created_at: now,
+    updated_at: now
+  };
+
+  if (isConfigured && supabase) {
+    const { data: inserted, error: insErr } = await supabase.from('bookings').insert(newBooking).select().single();
+    if (!insErr && inserted) newBooking = inserted;
+
+    await supabase.from('rooms').update({ status: 'OCCUPIED', updated_at: now }).eq('id', room.id);
+
+    await supabase.from('audit_logs').insert({
+      actor_id: user?.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(user.id) ? user.id : null,
+      actor_role: user?.role || 'RECEPTIONIST',
+      action: 'WALK_IN_REGISTERED',
+      entity_type: 'bookings',
+      entity_id: newBooking.id,
+      details: {
+        reference: booking_reference,
+        guest_name,
+        room_number: room.room_number,
+        amount: total_amount,
+        clerk: clerkName
+      }
+    });
+  } else {
+    memoryStore.bookings.unshift(newBooking);
+    room.status = 'OCCUPIED';
+  }
+
+  realtimeBus.emit('room:updated', { ...room, status: 'OCCUPIED' });
+  realtimeBus.emit('booking:created', newBooking);
+  realtimeBus.emit('booking:checked_in', newBooking);
+
+  return newBooking;
+}
+
 module.exports = {
   supabase,
   isConfigured,
@@ -883,5 +1069,7 @@ module.exports = {
   updateServiceRequestStatus,
   runCancellationCheck,
   markBookingAsPaid,
+  verifyPaymentProof,
+  createWalkInBooking,
   memoryStore
 };

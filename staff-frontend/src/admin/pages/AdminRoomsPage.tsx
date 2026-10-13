@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   Building,
+  RefreshCw,
 } from 'lucide-react';
 import { useAdminStore } from '../context/AdminStore';
 import { AdminHeader } from '../components/AdminHeader';
@@ -26,7 +27,7 @@ import { useToast } from '@/components/toast';
 
 export function AdminRoomsPage() {
   const toast = useToast();
-  const { rooms, updateRoom, addRoom, toggleMaintenance, deleteRoom } = useAdminStore();
+  const { rooms, updateRoom, addRoom, toggleMaintenance, deleteRoom, refresh } = useAdminStore();
 
   const [search, setSearch] = useState('');
   const [floorFilter, setFloorFilter] = useState<string>('ALL');
@@ -45,6 +46,7 @@ export function AdminRoomsPage() {
       available: rooms.filter((r) => r.status === 'AVAILABLE').length,
       occupied: rooms.filter((r) => r.status === 'OCCUPIED').length,
       reserved: rooms.filter((r) => r.status === 'RESERVED').length,
+      cleaning: rooms.filter((r) => r.status === 'CLEANING').length,
       maintenance: rooms.filter((r) => r.status === 'MAINTENANCE').length,
     };
   }, [rooms]);
@@ -78,14 +80,27 @@ export function AdminRoomsPage() {
         subtitle="Live inventory rack matrix, nightly rate yields, amenity configurations, and maintenance lockouts"
         badge={`${rooms.length} Suites`}
         actions={
-          <button
-            type="button"
-            onClick={() => setIsAddOpen(true)}
-            className="flex items-center gap-2 rounded-xl bg-[#0e2a4a] px-4 py-2 text-label-sm font-semibold text-white shadow-xs transition hover:bg-[#18395f] active:scale-[0.99] cursor-pointer"
-          >
-            <Plus className="h-4 w-4 text-[#89f5e7]" />
-            Add New Suite
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={async () => {
+                await refresh();
+                toast.info(`Inventory synced with Supabase · ${rooms.length} suites live`);
+              }}
+              className="flex items-center gap-1.5 rounded-xl border border-outline-variant/60 bg-surface-container-low px-3 py-2 text-label-sm font-semibold text-on-surface transition hover:bg-surface-container cursor-pointer"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Sync Live Rack
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsAddOpen(true)}
+              className="flex items-center gap-2 rounded-xl bg-[#0e2a4a] px-4 py-2 text-label-sm font-semibold text-white shadow-xs transition hover:bg-[#18395f] active:scale-[0.99] cursor-pointer"
+            >
+              <Plus className="h-4 w-4 text-[#89f5e7]" />
+              Add New Suite
+            </button>
+          </div>
         }
       />
 
@@ -142,7 +157,8 @@ export function AdminRoomsPage() {
               { id: 'AVAILABLE', label: 'Available', count: stats.available, dot: 'bg-emerald-500' },
               { id: 'OCCUPIED', label: 'Occupied', count: stats.occupied, dot: 'bg-[#0e2a4a]' },
               { id: 'RESERVED', label: 'Reserved', count: stats.reserved, dot: 'bg-sky-500' },
-              { id: 'MAINTENANCE', label: 'Maintenance', count: stats.maintenance, dot: 'bg-amber-500' },
+              { id: 'CLEANING', label: 'Cleaning', count: stats.cleaning, dot: 'bg-amber-400' },
+              { id: 'MAINTENANCE', label: 'Maintenance', count: stats.maintenance, dot: 'bg-red-500' },
             ].map((tab) => {
               const isActive = statusFilter === tab.id;
               return (

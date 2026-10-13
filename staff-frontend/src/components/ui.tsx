@@ -64,6 +64,7 @@ const STATUS_COLORS: Record<string, string> = {
   AVAILABLE: 'bg-secondary-container text-on-secondary-container',
   OCCUPIED: 'bg-tertiary-fixed text-on-tertiary-fixed-variant',
   RESERVED: 'bg-primary-container text-white',
+  CLEANING: 'bg-amber-100 text-amber-800 border border-amber-300',
   MAINTENANCE: 'bg-error-container text-on-error-container',
   PENDING: 'bg-sky-100 text-sky-800',
   CONFIRMED: 'bg-secondary-container text-on-secondary-container',
