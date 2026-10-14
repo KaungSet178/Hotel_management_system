@@ -179,25 +179,6 @@ export function HomePage() {
               </Reveal>
             ))}
           </div>
-
-          <Reveal delay={120}>
-            <Card className="mt-10 bg-brand-900 text-white">
-              <div className="grid gap-6 p-8 md:grid-cols-[auto_1fr] md:items-center">
-                <div className="text-center md:text-left">
-                  <p className="text-4xl font-bold text-brand-100">99.4%</p>
-                  <p className="text-xs uppercase tracking-widest text-brand-200">Verified</p>
-                </div>
-                <blockquote className="text-sm text-brand-50/95 sm:text-base">
-                  “StayEase has made our regular Yangon business travels so peaceful. Generating the QR code
-                  before my flight and walking straight to Room 402 without standing in a single reception
-                  line is unmatched luxury.”
-                  <footer className="mt-3 text-xs font-medium text-brand-200">
-                    Daw Thiri Kyaw · Managing Director, Silkroute Capital
-                  </footer>
-                </blockquote>
-              </div>
-            </Card>
-          </Reveal>
         </Container>
       </section>
     </div>
