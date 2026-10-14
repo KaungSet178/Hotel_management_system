@@ -388,6 +388,22 @@ export function AdminRoomsPage() {
                       )}
                     </div>
                   )}
+
+                  {/* Upcoming Future Reservation on Available Room */}
+                  {room.status === 'AVAILABLE' && room.upcomingBooking && (
+                    <div className="mt-3.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-2.5 text-body-xs text-emerald-800 dark:text-emerald-300">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                          Available until {room.upcomingBooking.checkIn}
+                        </span>
+                        <span className="text-[10px] uppercase font-bold text-emerald-600/70">Upcoming</span>
+                      </div>
+                      <p className="mt-1 text-[11px] text-emerald-700/90 font-medium">
+                        Guest: {room.upcomingBooking.guestName} (#{room.upcomingBooking.bookingRef})
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Card Footer Actions */}
@@ -476,7 +492,7 @@ export function AdminRoomsPage() {
                       </td>
                       <td className="py-3.5 px-4 text-label-xs text-on-surface-variant">
                         {room.guestName ? (
-                          <span className={cn('font-semibold', isOccupied ? 'text-primary' : 'text-sky-700')}>{room.guestName}</span>
+                          <span className={cn('font-semibold', isOccupied ? 'text-primary' : isAvail ? 'text-emerald-700' : 'text-sky-700')}>{room.guestName}</span>
                         ) : (
                           <span className="text-on-surface-variant/40">—</span>
                         )}

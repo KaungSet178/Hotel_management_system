@@ -111,7 +111,7 @@ export function RoomDetailPage() {
 
           <div className="mt-6">
             <p className="text-xs font-semibold uppercase tracking-widest text-brand-600">
-              {room.wing} · {room.floorRange}
+              {room.wing} · {room.floorRange} · {room.roomNumbers}
             </p>
             <h1 className="mt-2 text-3xl font-bold tracking-tight text-ink">{room.name}</h1>
             <p className="mt-1 text-sm text-ink-mute">{hotel.name}</p>

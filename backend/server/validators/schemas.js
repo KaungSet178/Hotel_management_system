@@ -20,8 +20,8 @@ const createBookingSchema = z.object({
     const d = new Date(val);
     return !isNaN(d.getTime());
   }, { message: 'check_out_date must be a valid date string (YYYY-MM-DD)' }),
-  payment_method: z.enum(['ONLINE'], {
-    errorMap: () => ({ message: "payment_method must be 'ONLINE'" })
+  payment_method: z.enum(['ONLINE', 'PAY_AT_HOTEL', 'KBZPAY', 'WAVEPAY', 'CARD', 'CB_PAY'], {
+    errorMap: () => ({ message: "payment_method must be one of: 'ONLINE', 'PAY_AT_HOTEL', 'KBZPAY', 'WAVEPAY', 'CARD', 'CB_PAY'" })
   }).optional().default('ONLINE'),
   guest_name: z.string().min(1).optional(),
   guest_email: z.string().email().optional(),

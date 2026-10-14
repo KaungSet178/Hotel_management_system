@@ -240,21 +240,31 @@ async function runTests() {
     if (foreignBookings.length > 0) throw new Error('Data breach: Guest received another guest records!');
   });
 
+  let guest2BookingRef = 'LUX-9230';
+  const g2Res = await fetch(`${BASE_URL}/api/bookings`, {
+    headers: { 'Authorization': TOKENS.GUEST_2 }
+  });
+  if (g2Res.ok) {
+    const g2Json = await g2Res.json();
+    if (g2Json.data && g2Json.data.length > 0) {
+      guest2BookingRef = g2Json.data[0].booking_reference;
+    }
+  }
+
   await assert('Guest 1 is forbidden from querying Guest 2 reservation by reference (403)', async () => {
-    // Marcus Vance's booking is LUX-9230
-    const res = await fetch(`${BASE_URL}/api/bookings/LUX-9230`, {
+    const res = await fetch(`${BASE_URL}/api/bookings/${guest2BookingRef}`, {
       headers: { 'Authorization': TOKENS.GUEST_1 }
     });
     if (res.status !== 403) throw new Error(`Expected 403 Forbidden, got ${res.status}`);
   });
 
   await assert('Staff (RECEPTIONIST) CAN query Guest 2 reservation by reference (200)', async () => {
-    const res = await fetch(`${BASE_URL}/api/bookings/LUX-9230`, {
+    const res = await fetch(`${BASE_URL}/api/bookings/${guest2BookingRef}`, {
       headers: { 'Authorization': TOKENS.RECEPTIONIST }
     });
     if (!res.ok) throw new Error(`Expected 200, got ${res.status}`);
     const json = await res.json();
-    if (json.data.booking_reference !== 'LUX-9230') throw new Error('Wrong booking returned');
+    if (json.data.booking_reference !== guest2BookingRef) throw new Error('Wrong booking returned');
   });
 
   // ==========================================================================

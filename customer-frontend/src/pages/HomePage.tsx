@@ -207,36 +207,37 @@ function FeaturedCard({ listing }: { listing: RoomListing }) {
           ))}
         </div>
       </Link>
-      <div className="flex flex-1 flex-col p-5">
+      <div className="flex items-center justify-between gap-2">
         <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">{hotel.name}</p>
-        <h3 className="mt-1 text-lg font-semibold text-ink">{room.name}</h3>
-        <div className="mt-2">
-          <Rating value={room.rating} count={room.reviewCount} />
+        <span className="text-xs font-semibold text-brand-700 bg-brand-50 px-2 py-0.5 rounded-md">{room.roomNumbers}</span>
+      </div>
+      <h3 className="mt-1 text-lg font-semibold text-ink">{room.name}</h3>
+      <div className="mt-2">
+        <Rating value={room.rating} count={room.reviewCount} />
+      </div>
+      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-ink-soft">
+        <span className="inline-flex items-center gap-1.5">
+          <BedDouble className="h-3.5 w-3.5 text-brand-500" aria-hidden="true" /> {room.bedConfiguration}
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <Users className="h-3.5 w-3.5 text-brand-500" aria-hidden="true" /> {room.maxGuests} guests
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <Expand className="h-3.5 w-3.5 text-brand-500" aria-hidden="true" /> {nightRange}
+        </span>
+      </div>
+      <div className="mt-auto flex items-end justify-between gap-3 pt-5">
+        <div>
+          <p className="text-xs text-ink-mute">Nightly from</p>
+          <p className="text-lg font-bold text-brand-800">{formatMMK(fromNightly)}</p>
         </div>
-        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-ink-soft">
-          <span className="inline-flex items-center gap-1.5">
-            <BedDouble className="h-3.5 w-3.5 text-brand-500" aria-hidden="true" /> {room.bedConfiguration}
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <Users className="h-3.5 w-3.5 text-brand-500" aria-hidden="true" /> {room.maxGuests} guests
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <Expand className="h-3.5 w-3.5 text-brand-500" aria-hidden="true" /> {nightRange}
-          </span>
-        </div>
-        <div className="mt-auto flex items-end justify-between gap-3 pt-5">
-          <div>
-            <p className="text-xs text-ink-mute">Nightly from</p>
-            <p className="text-lg font-bold text-brand-800">{formatMMK(fromNightly)}</p>
-          </div>
-          <Link
-            to={`/rooms/${room.id}${defaultQuery}`}
-            className={buttonStyles('outline', 'sm')}
-            aria-label={`Explore ${room.name}`}
-          >
-            Explore Room <ArrowRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-0.5" aria-hidden="true" />
-          </Link>
-        </div>
+        <Link
+          to={`/rooms/${room.id}${defaultQuery}`}
+          className={buttonStyles('outline', 'sm')}
+          aria-label={`Explore ${room.name}`}
+        >
+          Explore Room <ArrowRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-0.5" aria-hidden="true" />
+        </Link>
       </div>
     </Card>
   );

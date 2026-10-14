@@ -135,6 +135,18 @@ function RoomCard({
           )}
         </div>
       )}
+
+      {room.status === 'AVAILABLE' && room.upcomingBooking && (
+        <div className="mt-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 text-emerald-800 dark:text-emerald-300">
+          <p className="text-label-xs font-semibold flex items-center gap-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            Available until {room.upcomingBooking.checkIn}
+          </p>
+          <p className="mt-0.5 text-[11px] text-emerald-700/80">
+            Upcoming: {room.upcomingBooking.guestName} (#{room.upcomingBooking.bookingRef})
+          </p>
+        </div>
+      )}
     </div>
   );
 }

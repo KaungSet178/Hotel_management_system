@@ -17,6 +17,12 @@ export interface Room {
   guestName?: string;
   departsAt?: string;
   bookingRef?: string;
+  upcomingBooking?: {
+    guestName: string;
+    checkIn: string;
+    checkOut: string;
+    bookingRef: string;
+  };
 }
 
 export type BookingStatus = 'PENDING' | 'CONFIRMED' | 'CHECKED_IN' | 'CHECKED_OUT' | 'CANCELLED';

@@ -1,10 +1,10 @@
 # Grand Azure Hotel Management System
 ## Master Project Status, Completed Work & Comprehensive Roadmap
 
-**Document Version:** 2.1.0  
-**Last Updated:** October 12, 2026  
+**Document Version:** 2.2.0  
+**Last Updated:** October 14, 2026  
 **Repository:** [https://github.com/KaungSet178/Hotel_management_system](https://github.com/KaungSet178/Hotel_management_system)  
-**Architecture:** Monorepo (`backend/` + `customer-frontend/`)  
+**Architecture:** Monorepo (`backend/` + `customer-frontend/` + `staff-frontend/`)  
 
 ---
 
@@ -150,6 +150,25 @@ Total Verified Test Coverage:        90 Passed, 0 Failed (100%)
     * `20261014_010_auto_room_status_sync_trigger.sql`: Syncs room status automatically on booking transitions.
     * `20261014_011_auto_cancel_overdue_checkins.sql`: Stored procedure for automated no-show room release.
   * Continuous 30-second cancellation worker in `backend/server/cancellationJob.js`.
+
+---
+
+### Phase 9: Single Source of Truth Unification & Dynamic Reservation Operational Engine
+* **Supabase Single Source of Truth Alignment:**
+  * Eliminated hardcoded pricing fallbacks in Express customer routes (`customerRoutes.js`). All rates, capacities, bed configurations, and square meterages derive 1:1 from Supabase `public.rooms`.
+  * Rack rates between customer cards and the Admin Room Matrix match 100%.
+  * Suite names synchronized between staff dashboard and customer portal.
+  * Explicit room numbers (`#101`, `#102`, `#201`, etc.) displayed on Customer cards, detail pages, and checkout receipts.
+* **Dynamic Future Reservation Operational Logic:**
+  * Fixed PMS operational flaw where any future booking (e.g. 29 October when today is 14 October) locked the room as `RESERVED` today.
+  * Implemented dynamic date-bounded evaluation: a room's operational status today is only `RESERVED` if a confirmed reservation is active **today** (`cIn <= today && cOut > today`).
+  * For future bookings (`cIn > today`), rooms remain strictly **`AVAILABLE`** today and every day until the arrival date.
+  * Walk-in desk bookings on `RoomAvailabilityPage.tsx` and customer online bookings remain enabled for available dates.
+  * Front desk and admin cards display upcoming reservation pills: `Available until [Date] · Upcoming: [Guest Name]`.
+  * Dynamic reconciliation built into `getRooms()` and `getRoomById()` with automatic self-healing of Supabase rows.
+  * Guest check-out transitions rooms to `CLEANING` for proper housekeeping turnover.
+* **Master Technical Documentation:**
+  * Added detailed specification in [`ROOM_AVAILABILITY_AND_SINGLE_SOURCE_TRUTH_DOCUMENTATION.md`](ROOM_AVAILABILITY_AND_SINGLE_SOURCE_TRUTH_DOCUMENTATION.md).
 
 ---
 

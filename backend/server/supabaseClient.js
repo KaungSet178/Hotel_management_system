@@ -38,76 +38,345 @@ const initialRooms = [
   {
     id: 'a1111111-1111-1111-1111-111111111101',
     room_number: '101',
-    room_type: 'Deluxe Ocean View',
+    room_type: 'Deluxe Courtyard',
+    category: 'Deluxe',
     floor: 1,
-    price_per_night: 280.00,
+    wing: 'Garden Wing',
+    price_per_night: 165000,
     capacity: 2,
+    area_sqm: 31,
+    bed_configuration: '1 Queen Bed',
     status: 'AVAILABLE',
-    amenities: ['King Bed', 'Ocean Balcony', 'Espresso Machine', 'Rain Shower', 'High-speed Wi-Fi', '4K Smart TV'],
+    amenities: ['Courtyard View', 'Free High-Speed Wi-Fi'],
     image_url: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80',
-    description: 'Panoramic ocean vistas from an expansive private terrace with custom Italian marble bathroom.'
+    description: 'Ground floor courtyard suite with authentic teak millwork.',
+    slug: 'deluxe-courtyard-101'
   },
   {
     id: 'a1111111-1111-1111-1111-111111111102',
     room_number: '102',
     room_type: 'Executive Garden Suite',
+    category: 'Executive',
     floor: 1,
-    price_per_night: 340.00,
+    wing: 'Garden Wing',
+    price_per_night: 340000,
     capacity: 3,
+    area_sqm: 45,
+    bed_configuration: '1 King Bed',
     status: 'AVAILABLE',
     amenities: ['King Bed', 'Private Zen Garden', 'Soaking Tub', 'Lounge Area', 'Butler Service', 'Complimentary Mini-Bar'],
     image_url: 'https://images.unsplash.com/photo-1591088398332-8a7791972843?auto=format&fit=crop&w=1200&q=80',
-    description: 'Serene ground-level suite opening onto a private courtyard garden with hand-crafted teak furniture.'
+    description: 'Serene ground-level suite opening onto a private courtyard garden with hand-crafted teak furniture.',
+    slug: 'executive-ocean-suite'
+  },
+  {
+    id: 'a1111111-1111-1111-1111-111111111106',
+    room_number: '106',
+    room_type: 'Heritage Superior',
+    category: 'Heritage',
+    floor: 1,
+    wing: 'Heritage Wing',
+    price_per_night: 175000,
+    capacity: 2,
+    area_sqm: 34,
+    bed_configuration: '1 Queen Bed',
+    status: 'OCCUPIED',
+    amenities: ['Garden Terrace', 'Free High-Speed Wi-Fi', 'Breakfast Inc.'],
+    image_url: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80',
+    description: 'Heritage wing superior room overlooking central garden.',
+    slug: 'heritage-superior-106'
+  },
+  {
+    id: 'a1111111-1111-1111-1111-111111111110',
+    room_number: '110',
+    room_type: 'Standard Twin',
+    category: 'Standard',
+    floor: 1,
+    wing: 'City Wing',
+    price_per_night: 150000,
+    capacity: 2,
+    area_sqm: 30,
+    bed_configuration: '2 Twin Beds',
+    status: 'AVAILABLE',
+    amenities: ['Twin Beds', 'Free High-Speed Wi-Fi', 'City View'],
+    image_url: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=1200&q=80',
+    description: 'Comfortable twin bedding room tailored for business travellers.',
+    slug: 'standard-twin-110'
+  },
+  {
+    id: 'a1111111-1111-1111-1111-111111111118',
+    room_number: '118',
+    room_type: 'Deluxe Courtyard',
+    category: 'Deluxe',
+    floor: 1,
+    wing: 'Garden Wing',
+    price_per_night: 165000,
+    capacity: 2,
+    area_sqm: 33,
+    bed_configuration: '2 Twin Beds',
+    status: 'AVAILABLE',
+    amenities: ['Courtyard View', 'Free High-Speed Wi-Fi', 'Rain Shower'],
+    image_url: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80',
+    description: 'Quiet courtyard-facing deluxe room on the ground tier.',
+    slug: 'deluxe-courtyard-118'
   },
   {
     id: 'a1111111-1111-1111-1111-111111111201',
     room_number: '201',
     room_type: 'Presidential Horizon Penthouse',
+    category: 'Villa',
     floor: 2,
-    price_per_night: 650.00,
+    wing: 'Private Villa Enclave',
+    price_per_night: 650000,
     capacity: 4,
+    area_sqm: 95,
+    bed_configuration: '2 King Beds',
     status: 'AVAILABLE',
-    amenities: ['Two Master Bedrooms', 'Private Plunge Pool', 'Dining Room for 6', 'Sub-Zero Wine Cellar', '24/7 Butler', 'Bang & Olufsen Audio'],
+    amenities: ['Two Master Bedrooms', 'Private Plunge Pool', 'Dining Room for 6', 'Sub-Zero Wine Cellar', '24/7 Butler'],
     image_url: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=1200&q=80',
-    description: 'The pinnacle of coastal luxury featuring 360-degree shoreline panoramas and a private rooftop plunge pool.'
+    description: 'The pinnacle of coastal luxury featuring private plunge pool and 24/7 butler service.',
+    slug: 'presidential-garden-villa'
   },
   {
     id: 'a1111111-1111-1111-1111-111111111202',
     room_number: '202',
     room_type: 'Azure Sunset Villa Room',
+    category: 'Villa',
     floor: 2,
-    price_per_night: 310.00,
+    wing: 'Private Villa Enclave',
+    price_per_night: 310000,
     capacity: 2,
-    status: 'OCCUPIED',
-    amenities: ['King Bed', 'Sunset Terrace', 'Whirlpool Jacuzzi', 'Walk-in Wardrobe', 'Nespresso Atelier'],
+    area_sqm: 52,
+    bed_configuration: 'King + Daybed',
+    status: 'AVAILABLE',
+    amenities: ['Sunset Balcony', 'Jacuzzi Tub', 'Private Butler', 'Nespresso Atelier'],
     image_url: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=1200&q=80',
-    description: 'West-facing sanctuary designed to capture golden sunset hues over the turquoise cove.'
+    description: 'Enclave villa room capturing warm sunset hues over the shoreline.',
+    slug: 'signature-villa'
+  },
+  {
+    id: 'a1111111-1111-1111-1111-111111111208',
+    room_number: '208',
+    room_type: 'Heritage Junior Suite',
+    category: 'Heritage',
+    floor: 2,
+    wing: 'Heritage Wing',
+    price_per_night: 185000,
+    capacity: 2,
+    area_sqm: 38,
+    bed_configuration: '2 Twin Beds',
+    status: 'AVAILABLE',
+    amenities: ['Courtyard View', 'Free High-Speed Wi-Fi', 'Heritage Teak Desk'],
+    image_url: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80',
+    description: 'Spacious Junior suite with dedicated work alcove.',
+    slug: 'heritage-junior-208'
+  },
+  {
+    id: 'a1111111-1111-1111-1111-111111111215',
+    room_number: '215',
+    room_type: 'Garden Balcony',
+    category: 'Deluxe',
+    floor: 2,
+    wing: 'Garden Wing',
+    price_per_night: 190000,
+    capacity: 2,
+    area_sqm: 36,
+    bed_configuration: '1 King Bed',
+    status: 'AVAILABLE',
+    amenities: ['Private Balcony', 'Garden View', 'Espresso Machine'],
+    image_url: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80',
+    description: 'Elevated second-floor terrace suite overlooking landscaped botanical gardens.',
+    slug: 'garden-balcony-215'
   },
   {
     id: 'a1111111-1111-1111-1111-111111111301',
     room_number: '301',
     room_type: 'Skyline Grand King',
+    category: 'Studio',
     floor: 3,
-    price_per_night: 240.00,
+    wing: 'Harbor Wing',
+    price_per_night: 240000,
     capacity: 2,
-    status: 'CLEANING',
-    amenities: ['Plush King Bed', 'Floor-to-Ceiling Glass', 'Aromatherapy Diffuser', 'Dyson Supersonic', 'Smart Climate Control'],
+    area_sqm: 24,
+    bed_configuration: '1 Queen Bed',
+    status: 'AVAILABLE',
+    amenities: ['City Skyline View', 'High-Speed Wi-Fi', 'Smart TV 4K', 'Espresso Bar'],
     image_url: 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=1200&q=80',
-    description: 'Sleek contemporary design with sweeping city skyline and harbor views.'
+    description: 'High-floor studio suite offering dazzling urban skyline vistas.',
+    slug: 'urban-studio'
   },
   {
     id: 'a1111111-1111-1111-1111-111111111302',
     room_number: '302',
     room_type: 'Royal Heritage Chamber',
+    category: 'Villa',
     floor: 3,
-    price_per_night: 390.00,
+    wing: 'Heritage Wing',
+    price_per_night: 390000,
     capacity: 2,
-    status: 'MAINTENANCE',
-    amenities: ['Handcrafted Canopy Bed', 'Fireplace', 'Hermes Bath Amenities', 'Library Alcove', 'Chauffeur Service'],
+    area_sqm: 88,
+    bed_configuration: 'King + Daybed',
+    status: 'AVAILABLE',
+    amenities: ['Canopy Bed', 'Private Fireplace', 'Hermes Amenities', 'Library Alcove'],
     image_url: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80',
-    description: 'Rich mahogany finishes and authentic historical accents paired with modern state-of-the-art comforts.'
+    description: 'Lavish colonial master chamber with antique teak four-poster bed.',
+    slug: 'executive-garden-villa'
+  },
+  {
+    id: 'a1111111-1111-1111-1111-111111111304',
+    room_number: '304',
+    room_type: 'Deluxe Azure Suite',
+    category: 'Deluxe',
+    floor: 3,
+    wing: 'Sea Breeze Wing',
+    price_per_night: 210000,
+    capacity: 2,
+    area_sqm: 40,
+    bed_configuration: '1 King Bed',
+    status: 'AVAILABLE',
+    amenities: ['Harbor View', 'Free High-Speed Wi-Fi', 'Espresso Machine'],
+    image_url: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80',
+    description: 'Airy luxury suite with sweeping river breeze views.',
+    slug: 'deluxe-azure-suite-304'
+  },
+  {
+    id: 'a1111111-1111-1111-1111-111111111306',
+    room_number: '306',
+    room_type: 'Deluxe Azure Suite',
+    category: 'Deluxe',
+    floor: 3,
+    wing: 'Sea Breeze Wing',
+    price_per_night: 220000,
+    capacity: 2,
+    area_sqm: 42,
+    bed_configuration: '1 King Bed',
+    status: 'AVAILABLE',
+    amenities: ['Harbor View', 'Free High-Speed Wi-Fi', 'Breakfast Inc.', 'Espresso Machine'],
+    image_url: 'https://images.unsplash.com/photo-1591088398332-8a7791972843?auto=format&fit=crop&w=1200&q=80',
+    description: 'Prime harbor-facing suite on the 3rd floor with panoramic view.',
+    slug: 'deluxe-azure-suite-306'
+  },
+  {
+    id: 'a1111111-1111-1111-1111-111111111308',
+    room_number: '308',
+    room_type: 'Deluxe Azure Suite',
+    category: 'Deluxe',
+    floor: 3,
+    wing: 'Sea Breeze Wing',
+    price_per_night: 210000,
+    capacity: 2,
+    area_sqm: 40,
+    bed_configuration: '1 King Bed',
+    status: 'AVAILABLE',
+    amenities: ['Harbor View', 'Free High-Speed Wi-Fi', 'Rain Shower'],
+    image_url: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80',
+    description: 'Coastal light-filled suite overlooking the Yangon River promenade.',
+    slug: 'deluxe-azure-suite-308'
+  },
+  {
+    id: 'a1111111-1111-1111-1111-111111111402',
+    room_number: '402',
+    room_type: 'Deluxe Azure Suite',
+    category: 'Deluxe',
+    floor: 4,
+    wing: 'Sea Breeze Wing',
+    price_per_night: 220000,
+    capacity: 2,
+    area_sqm: 41,
+    bed_configuration: '1 King Bed',
+    status: 'AVAILABLE',
+    amenities: ['Harbor View', 'Free High-Speed Wi-Fi', 'Breakfast Inc.'],
+    image_url: 'https://images.unsplash.com/photo-1591088398332-8a7791972843?auto=format&fit=crop&w=1200&q=80',
+    description: 'High-floor ocean breeze suite with expansive double balcony.',
+    slug: 'deluxe-azure-suite-402'
+  },
+  {
+    id: 'a1111111-1111-1111-1111-111111111411',
+    room_number: '411',
+    room_type: 'Executive Ocean Panorama',
+    category: 'Executive',
+    floor: 4,
+    wing: 'Penthouse Level',
+    price_per_night: 330000,
+    capacity: 2,
+    area_sqm: 54,
+    bed_configuration: '1 Super King',
+    status: 'AVAILABLE',
+    amenities: ['Ocean Panorama', 'Free High-Speed Wi-Fi', 'Strand Club Access'],
+    image_url: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=1200&q=80',
+    description: 'Panoramic ocean vista suite with evening cocktail lounge access.',
+    slug: 'executive-ocean-411'
+  },
+  {
+    id: 'a1111111-1111-1111-1111-111111111412',
+    room_number: '412',
+    room_type: 'Executive Ocean Panorama',
+    category: 'Executive',
+    floor: 4,
+    wing: 'Penthouse Level',
+    price_per_night: 340000,
+    capacity: 2,
+    area_sqm: 56,
+    bed_configuration: '1 Super King',
+    status: 'OCCUPIED',
+    amenities: ['Ocean Panorama', 'Free High-Speed Wi-Fi', 'Breakfast Inc.', 'Strand Club Access'],
+    image_url: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80',
+    description: 'Uninterrupted 180-degree ocean view suite at the penthouse boundary.',
+    slug: 'executive-ocean-412'
+  },
+  {
+    id: 'a1111111-1111-1111-1111-111111111414',
+    room_number: '414',
+    room_type: 'Executive Ocean Panorama',
+    category: 'Executive',
+    floor: 4,
+    wing: 'Penthouse Level',
+    price_per_night: 335000,
+    capacity: 2,
+    area_sqm: 55,
+    bed_configuration: '1 Super King',
+    status: 'AVAILABLE',
+    amenities: ['Ocean Panorama', 'Free High-Speed Wi-Fi', 'Espresso Machine'],
+    image_url: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=1200&q=80',
+    description: 'Corner panoramic suite featuring floor-to-ceiling glass wrapping.',
+    slug: 'executive-ocean-414'
+  },
+  {
+    id: 'a1111111-1111-1111-1111-111111111501',
+    room_number: '501',
+    room_type: 'Governor Suite',
+    category: 'Governor',
+    floor: 5,
+    wing: 'Penthouse Level',
+    price_per_night: 460000,
+    capacity: 3,
+    area_sqm: 68,
+    bed_configuration: '1 Super King',
+    status: 'OCCUPIED',
+    amenities: ['Ocean Panorama', 'Free High-Speed Wi-Fi', 'Breakfast Inc.', '24/7 Butler Service'],
+    image_url: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80',
+    description: 'Historic top-floor presidential suite with private dining salon.',
+    slug: 'governor-suite-501'
+  },
+  {
+    id: 'a1111111-1111-1111-1111-111111111512',
+    room_number: '512',
+    room_type: 'Presidential Villa',
+    category: 'Presidential',
+    floor: 5,
+    wing: 'Penthouse Level',
+    price_per_night: 520000,
+    capacity: 3,
+    area_sqm: 82,
+    bed_configuration: '1 Super King',
+    status: 'OCCUPIED',
+    amenities: ['Private Pool', 'Ocean Panorama', 'Butler Service', 'Champagne Service'],
+    image_url: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=1200&q=80',
+    description: 'The pinnacle Grand Azure suite with private heated rooftop pool.',
+    slug: 'presidential-villa-512'
   }
 ];
+
 
 const initialProfiles = [
   {
@@ -230,23 +499,79 @@ function releaseRoomLock(roomId) {
 
 async function getRooms() {
   if (isConfigured && supabase) {
-    const { data, error } = await supabase.from('rooms').select('*').order('room_number');
-    if (!error && data) return data;
+    const { data: rawRooms, error } = await supabase.from('rooms').select('*').order('room_number');
+    if (!error && rawRooms) {
+      // Dynamic operational room status calculation for TODAY:
+      // A room is only RESERVED if a confirmed reservation is active TODAY (check_in_date <= today && check_out_date > today).
+      // Future reservations (e.g. check-in 29 Oct when today is 14 Oct) do NOT lock the room today -> it remains AVAILABLE!
+      try {
+        const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Yangon' }).format(new Date());
+
+        const { data: activeBookings } = await supabase
+          .from('bookings')
+          .select('id, room_id, booking_status, check_in_date, check_out_date')
+          .in('booking_status', ['CHECKED_IN', 'CONFIRMED']);
+
+        const checkedInRoomIds = new Set();
+        const todayReservedRoomIds = new Set();
+
+        if (Array.isArray(activeBookings)) {
+          for (const b of activeBookings) {
+            if (!b.room_id) continue;
+            const cIn = String(b.check_in_date || '').split('T')[0];
+            const cOut = String(b.check_out_date || '').split('T')[0];
+
+            if (b.booking_status === 'CHECKED_IN') {
+              checkedInRoomIds.add(b.room_id);
+            } else if (b.booking_status === 'CONFIRMED') {
+              if (cIn <= today && cOut > today) {
+                todayReservedRoomIds.add(b.room_id);
+              }
+            }
+          }
+        }
+
+        return rawRooms.map(r => {
+          let dynamicStatus = r.status;
+          if (checkedInRoomIds.has(r.id)) {
+            dynamicStatus = 'OCCUPIED';
+          } else if (todayReservedRoomIds.has(r.id)) {
+            dynamicStatus = 'RESERVED';
+          } else if (r.status === 'MAINTENANCE' || r.status === 'CLEANING') {
+            dynamicStatus = r.status;
+          } else {
+            dynamicStatus = 'AVAILABLE';
+          }
+
+          if (dynamicStatus !== r.status) {
+            supabase.from('rooms').update({ status: dynamicStatus, updated_at: new Date().toISOString() }).eq('id', r.id).then();
+          }
+
+          return { ...r, status: dynamicStatus };
+        });
+      } catch (reconErr) {
+        console.warn('[getRooms] Dynamic status calculation fallback:', reconErr.message);
+        return rawRooms;
+      }
+    }
   }
   return memoryStore.rooms;
 }
 
 async function getRoomById(roomId) {
-  if (isConfigured && supabase) {
-    const { data } = await supabase.from('rooms').select('*').eq('id', roomId).single();
-    if (data) return data;
-  }
-  return memoryStore.rooms.find(r => r.id === roomId || r.room_number === roomId);
+  const allRooms = await getRooms();
+  const room = allRooms.find(r => r.id === roomId || r.room_number === roomId || r.slug === roomId || `room-${r.room_number}` === roomId);
+  if (room) return room;
+  return null;
 }
 
 async function updateRoomStatus(roomId, newStatus) {
   if (isConfigured && supabase) {
-    await supabase.from('rooms').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', roomId);
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(roomId);
+    let q = supabase.from('rooms').update({ status: newStatus, updated_at: new Date().toISOString() });
+    if (isUuid) q = q.eq('id', roomId);
+    else q = q.eq('room_number', roomId);
+    await q;
   }
   const room = memoryStore.rooms.find(r => r.id === roomId || r.room_number === roomId);
   if (room) {
@@ -655,12 +980,12 @@ async function checkOutBooking(bookingId) {
     }).eq('id', booking.id);
 
     await supabase.from('rooms').update({
-      status: 'AVAILABLE',
+      status: 'CLEANING',
       updated_at: now
     }).eq('id', booking.room_id);
 
     const updatedBooking = { ...booking, booking_status: 'CHECKED_OUT', checked_out_at: now };
-    const updatedRoom = { ...(booking.rooms || {}), status: 'AVAILABLE' };
+    const updatedRoom = { ...(booking.rooms || {}), status: 'CLEANING' };
     realtimeBus.emit('room:updated', updatedRoom);
     realtimeBus.emit('booking:checked_out', updatedBooking);
     return { success: true, booking: updatedBooking, room: updatedRoom };
@@ -674,7 +999,7 @@ async function checkOutBooking(bookingId) {
 
   const room = memoryStore.rooms.find(r => r.id === booking.room_id);
   if (room) {
-    room.status = 'AVAILABLE';
+    room.status = 'CLEANING';
     realtimeBus.emit('room:updated', room);
   }
 

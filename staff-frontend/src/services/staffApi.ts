@@ -106,29 +106,53 @@ export function formatGuestPreferences(prefs: any): string | undefined {
 export function mapSupabaseRoomToUi(
   r: any,
   checkedInBookingsMap?: Map<string, { guest_name: string; check_out_date: string; booking_reference: string }>,
-  confirmedBookingsMap?: Map<string, { guest_name: string; check_in_date: string; check_out_date: string; booking_reference: string }>,
+  todayReservedMap?: Map<string, { guest_name: string; check_in_date: string; check_out_date: string; booking_reference: string }>,
+  upcomingBookingsMap?: Map<string, { guest_name: string; check_in_date: string; check_out_date: string; booking_reference: string }>,
 ): Room {
   const checkedIn = checkedInBookingsMap?.get(r.id);
-  const confirmed = confirmedBookingsMap?.get(r.id);
+  const confirmed = todayReservedMap?.get(r.id);
+  const upcoming = upcomingBookingsMap?.get(r.id);
 
   // Status determination:
   // 1. If active checked-in booking exists -> strictly OCCUPIED
-  // 2. If active confirmed reservation exists -> strictly RESERVED
-  // 3. Otherwise -> AVAILABLE (prevents phantom or orphaned occupancies/reservations)
+  // 2. If active confirmed reservation exists FOR TODAY -> strictly RESERVED
+  // 3. If room is under maintenance or cleaning -> preserve status
+  // 4. Otherwise -> AVAILABLE (even if there is a future reservation on a later date!)
   let status: RoomStatus = 'AVAILABLE';
   if (checkedIn) {
     status = 'OCCUPIED';
   } else if (confirmed) {
     status = 'RESERVED';
+  } else if (r.status === 'MAINTENANCE' || r.status === 'CLEANING') {
+    status = r.status;
   } else {
     status = 'AVAILABLE';
+  }
+
+  let guestName = checkedIn?.guest_name || confirmed?.guest_name || undefined;
+  let departsAt = checkedIn?.check_out_date
+    ? `Departs: ${checkedIn.check_out_date}`
+    : confirmed?.check_in_date
+    ? `Arrival: Today (${confirmed.check_in_date})`
+    : undefined;
+  let bookingRef = checkedIn?.booking_reference
+    ? `#${checkedIn.booking_reference}`
+    : confirmed?.booking_reference
+    ? `#${confirmed.booking_reference}`
+    : undefined;
+
+  // If room is AVAILABLE today but has an upcoming future reservation:
+  if (status === 'AVAILABLE' && upcoming) {
+    departsAt = `Available until ${upcoming.check_in_date}`;
+    guestName = `Upcoming: ${upcoming.guest_name}`;
+    bookingRef = `#${upcoming.booking_reference}`;
   }
 
   return {
     id: r.id,
     number: String(r.room_number || ''),
     floor: Number(r.floor) || 1,
-    category: r.category || r.room_type || 'Deluxe',
+    category: r.room_type || r.category || 'Deluxe',
     beds: r.bed_configuration || '1 King Bed',
     maxGuests: Number(r.capacity) || 2,
     size: Number(r.area_sqm) || 35,
@@ -137,17 +161,15 @@ export function mapSupabaseRoomToUi(
     amenities: Array.isArray(r.amenities) ? r.amenities : [],
     status,
     image: r.image_url || undefined,
-    guestName: checkedIn?.guest_name || confirmed?.guest_name || undefined,
-    departsAt: checkedIn?.check_out_date
-      ? `Departs: ${checkedIn.check_out_date}`
-      : confirmed?.check_in_date
-      ? `Arrival: ${confirmed.check_in_date}`
-      : undefined,
-    bookingRef: checkedIn?.booking_reference
-      ? `#${checkedIn.booking_reference}`
-      : confirmed?.booking_reference
-      ? `#${confirmed.booking_reference}`
-      : undefined,
+    guestName,
+    departsAt,
+    bookingRef,
+    upcomingBooking: upcoming ? {
+      guestName: upcoming.guest_name,
+      checkIn: upcoming.check_in_date,
+      checkOut: upcoming.check_out_date,
+      bookingRef: upcoming.booking_reference,
+    } : undefined,
   };
 }
 
@@ -399,26 +421,42 @@ export const staffApi = {
         .select('id, room_id, guest_name, check_in_date, check_out_date, booking_reference')
         .eq('booking_status', 'CONFIRMED');
 
-      const confirmedMap = new Map<string, { guest_name: string; check_in_date: string; check_out_date: string; booking_reference: string }>();
+      // 1) todayReservedMap: ONLY for reservations that are active TODAY (cIn <= today && cOut > today)
+      // 2) upcomingMap: for future reservations (cIn > today)
+      const todayReservedMap = new Map<string, { guest_name: string; check_in_date: string; check_out_date: string; booking_reference: string }>();
+      const upcomingMap = new Map<string, { guest_name: string; check_in_date: string; check_out_date: string; booking_reference: string }>();
+
       if (confirmedBookings) {
         for (const b of confirmedBookings) {
+          if (!b.room_id) continue;
           const cIn = String(b.check_in_date || '').split('T')[0];
-          // Overdue arrival rule: If scheduled check-in date is in the past (< today) and guest has not arrived,
-          // the room MUST NOT stay reserved. It becomes AVAILABLE at once for walk-ins/other guests.
-          if (cIn && cIn < today) {
-            // Auto-cancel no-show reservation in Supabase and release room
+          const cOut = String(b.check_out_date || '').split('T')[0];
+
+          // Overdue arrival rule: If scheduled check-out has passed without arrival, auto-cancel no-show
+          if (cOut && cOut <= today) {
             supabase
               .from('bookings')
               .update({
                 booking_status: 'CANCELLED',
-                special_notes: 'Auto-cancelled: Check-in date passed without arrival (No-show).',
+                special_notes: 'Auto-cancelled: Reservation dates passed without arrival (No-show).',
                 updated_at: new Date().toISOString(),
               })
               .eq('id', b.id)
               .then();
-            continue; // Do NOT reserve this room; it becomes AVAILABLE at once!
+            continue;
           }
-          if (b.room_id) confirmedMap.set(b.room_id, b);
+
+          if (cIn <= today && cOut > today) {
+            // Reserved for TODAY (Guest arrives today or stay is active today awaiting check-in)
+            todayReservedMap.set(b.room_id, b);
+          } else if (cIn > today) {
+            // Future reservation (e.g. 29 Oct when today is 14 Oct).
+            // Room is NOT reserved today! It is AVAILABLE until cIn!
+            const existing = upcomingMap.get(b.room_id);
+            if (!existing || cIn < String(existing.check_in_date).split('T')[0]) {
+              upcomingMap.set(b.room_id, b);
+            }
+          }
         }
       }
 
@@ -427,9 +465,9 @@ export const staffApi = {
       for (const r of rawRooms) {
         const expectedStatus: RoomStatus = checkedInMap.has(r.id)
           ? 'OCCUPIED'
-          : confirmedMap.has(r.id)
+          : todayReservedMap.has(r.id)
           ? 'RESERVED'
-          : 'AVAILABLE';
+          : (r.status === 'MAINTENANCE' || r.status === 'CLEANING' ? r.status : 'AVAILABLE');
 
         if (r.status !== expectedStatus) {
           supabase
@@ -441,7 +479,7 @@ export const staffApi = {
         }
       }
 
-      return rawRooms.map((r) => mapSupabaseRoomToUi(r, checkedInMap, confirmedMap));
+      return rawRooms.map((r) => mapSupabaseRoomToUi(r, checkedInMap, todayReservedMap, upcomingMap));
     } catch (err) {
       console.error('fetchRooms error:', err);
       return initialRooms;
@@ -670,7 +708,10 @@ export const staffApi = {
 
     const payload: any = { updated_at: new Date().toISOString() };
     if (updates.pricePerNight !== undefined) payload.price_per_night = updates.pricePerNight;
-    if (updates.category) payload.category = updates.category;
+    if (updates.category) {
+      payload.category = updates.category;
+      payload.room_type = updates.category;
+    }
     if (updates.beds) payload.bed_configuration = updates.beds;
     if (updates.maxGuests !== undefined) payload.capacity = updates.maxGuests;
     if (updates.size !== undefined) payload.area_sqm = updates.size;

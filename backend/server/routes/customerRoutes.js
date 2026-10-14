@@ -68,17 +68,10 @@ const ADD_ONS = [
   }
 ];
 
-function defaultNightly(roomSlug, basePrice) {
-  switch (roomSlug) {
-    case 'deluxe-azure-suite': return 220000;
-    case 'executive-ocean-suite': return 340000;
-    case 'signature-villa': return 380000;
-    case 'presidential-garden-villa': return 520000;
-    case 'urban-studio': return 165000;
-    case 'executive-garden-villa': return 240000;
-    default:
-      return Number(basePrice) >= 10000 ? Math.round(Number(basePrice)) : Math.round(Number(basePrice) * 1000);
-  }
+function getRoomNightlyRate(pricePerNight) {
+  const num = Number(pricePerNight);
+  if (!Number.isFinite(num) || num <= 0) return 200000;
+  return num >= 10000 ? Math.round(num) : Math.round(num * 1000);
 }
 
 function buildRatePlans(nightlyRate, isWellnessEligible = false) {
@@ -218,8 +211,8 @@ function mapHotel(h) {
 
 function mapRoom(r, hotel, dynamicAvailability = null) {
   const roomSlug = r.slug || `room-${r.room_number}`;
-  const baseRate = defaultNightly(roomSlug, r.price_per_night);
-  const isWellness = roomSlug === 'deluxe-azure-suite' || (r.category || '').toLowerCase() === 'villa';
+  const baseRate = getRoomNightlyRate(r.price_per_night);
+  const isWellness = (r.category || '').toLowerCase() === 'villa' || (r.room_type || '').toLowerCase().includes('villa');
   const ratePlans = buildRatePlans(baseRate, isWellness);
 
   let gallery = [];
@@ -243,20 +236,20 @@ function mapRoom(r, hotel, dynamicAvailability = null) {
     roomNumbers: r.room_number ? `#${r.room_number}` : 'Suite',
     description: r.description || 'Exclusive luxury hotel suite with premium amenities.',
     maxGuests: Number(r.capacity) || 2,
-    bedConfiguration: r.bed_setup || r.bed_configuration || '1 King Bed',
-    areaSqm: Number(r.area_sqm) || 42,
+    bedConfiguration: r.bed_configuration || r.bed_setup || '1 King Bed',
+    areaSqm: Number(r.area_sqm) || 35,
     amenities: Array.isArray(r.amenities) ? r.amenities : ['Wi-Fi 6', 'Air Conditioning', 'Espresso Machine', 'Breakfast'],
     images: gallery,
     rating: Number(r.rating) || 4.9,
     reviewCount: Number(r.review_count) || 120,
-    inventory: Number(r.inventory) || 5,
+    inventory: Number(r.inventory) || 1,
     tags: Array.isArray(r.tags) ? r.tags : ['Recommended'],
     blockoutRanges: []
   };
 
   const defaultAvail = {
     available: r.status !== 'MAINTENANCE',
-    roomsLeft: r.status !== 'MAINTENANCE' ? (r.inventory || 4) : 0
+    roomsLeft: r.status !== 'MAINTENANCE' ? (r.inventory || 1) : 0
   };
 
   return {
@@ -266,7 +259,7 @@ function mapRoom(r, hotel, dynamicAvailability = null) {
       name: 'StayEase Yangon Riverside'
     }),
     ratePlans,
-    fromNightly: ratePlans[1].nightlyRate, // Saver lowest rate
+    fromNightly: baseRate, // Single source of truth: nightly base rate matches Supabase rooms table and admin dashboard
     availability: dynamicAvailability || defaultAvail
   };
 }
@@ -298,7 +291,8 @@ function mapBookingToFrontend(b, roomListing) {
     name: 'StayEase Yangon Riverside'
   });
 
-  const ratePlans = buildRatePlans(defaultNightly(room.id, b.total_amount));
+  const baseBookingRate = getRoomNightlyRate(b.total_amount ? (b.total_amount / (nights || 1)) : room.pricePerNight);
+  const ratePlans = buildRatePlans(baseBookingRate);
   const ratePlan = ratePlans.find(rp => rp.id === b.rate_plan_id) || ratePlans[0];
 
   const checkIn = String(b.check_in_date).split('T')[0];
@@ -623,7 +617,7 @@ router.get('/rooms/:roomId', async (req, res) => {
   try {
     const { roomId } = req.params;
     const rawRooms = await getRooms();
-    const room = rawRooms.find(r => r.id === roomId || r.slug === roomId || r.room_number === roomId);
+    const room = rawRooms.find(r => r.id === roomId || r.slug === roomId || r.room_number === roomId || `room-${r.room_number}` === roomId);
 
     if (!room) {
       return res.status(404).json({ message: `Room "${roomId}" not found.` });
@@ -653,7 +647,7 @@ router.get('/rooms/:roomId/availability', async (req, res) => {
     const { checkIn, checkOut } = req.query;
 
     const rawRooms = await getRooms();
-    const room = rawRooms.find(r => r.id === roomId || r.slug === roomId || r.room_number === roomId);
+    const room = rawRooms.find(r => r.id === roomId || r.slug === roomId || r.room_number === roomId || `room-${r.room_number}` === roomId);
 
     if (!room) {
       return res.status(404).json({ message: `Room "${roomId}" not found.` });
@@ -750,15 +744,15 @@ router.post('/bookings', optionalAuth, async (req, res, next) => {
 
     // Resolve room row in database
     const rawRooms = await getRooms();
-    const roomRow = rawRooms.find(r => r.id === roomId || r.slug === roomId || r.room_number === roomId);
+    const roomRow = rawRooms.find(r => r.id === roomId || r.slug === roomId || r.room_number === roomId || `room-${r.room_number}` === roomId);
     if (!roomRow) {
       return res.status(404).json({ message: `Room "${roomId}" not found.` });
     }
 
-    // Compute prices and rate plan
-    const roomSlug = roomRow.slug || `room-${roomRow.room_number}`;
-    const baseRate = defaultNightly(roomSlug, roomRow.price_per_night);
-    const ratePlans = buildRatePlans(baseRate, roomSlug === 'deluxe-azure-suite' || roomRow.category === 'Villa');
+    // Compute prices and rate plan strictly from Supabase room record
+    const baseRate = getRoomNightlyRate(roomRow.price_per_night);
+    const isWellness = (roomRow.category || '').toLowerCase() === 'villa' || (roomRow.room_type || '').toLowerCase().includes('villa');
+    const ratePlans = buildRatePlans(baseRate, isWellness);
     const chosenRatePlan = ratePlans.find(rp => rp.id === ratePlanId) || ratePlans[0];
 
     const selectedAddOns = (addOnIds || []).map(id => ADD_ONS.find(a => a.id === id)).filter(Boolean);

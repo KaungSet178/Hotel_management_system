@@ -608,21 +608,23 @@ function buildSeedBooking(params: {
 export function defaultNightly(room: Room): number {
   switch (room.id) {
     case 'deluxe-azure-suite':
-      return 220000;
-    case 'executive-ocean-suite':
       return 340000;
+    case 'executive-ocean-suite':
+      return 460000;
     case 'heritage-junior-suite':
-      return 185000;
+      return 165000;
     case 'signature-villa':
-      return 380000;
+      return 310000;
     case 'presidential-garden-villa':
-      return 520000;
+    case 'presidential-horizon-penthouse':
+      return 650000;
     case 'urban-studio':
       return 165000;
     case 'urban-executive-suite':
       return 240000;
     case 'executive-garden-villa':
-      return 240000;
+    case 'executive-garden-suite':
+      return 390000;
     case 'lakeside-heritage-suite':
       return 310000;
     default:
